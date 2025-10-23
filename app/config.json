@@ -1,0 +1,13 @@
+{
+  "database": {
+    "host": "",
+    "port": 0,
+    "user": "",
+    "password": ""
+  },
+  "IBKR": {
+    "HOST": "localhost",
+    "PORT": 7497,
+    "CLIENT_ID": "your_client_id"
+  }
+}
