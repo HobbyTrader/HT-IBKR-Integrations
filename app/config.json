@@ -9,5 +9,6 @@
     "HOST": "localhost",
     "PORT": 7497,
     "CLIENT_ID": "your_client_id"
-  }
+  },
+  "loglevel": "ERROR"
 }

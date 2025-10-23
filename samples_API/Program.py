@@ -278,12 +278,12 @@ class TestApp(TestWrapper, TestClient):
             #self.marketScannersOperations_req()
             #self.fundamentalsOperations_req()
             #self.bulletinsOperations_req()
-            self.contractOperations()
+            # self.contractOperations()
             #self.newsOperations_req()
             #self.miscelaneousOperations()
             #self.linkingOperations()
             #self.financialAdvisorOperations()
-            #self.orderOperations_req()
+            self.orderOperations_req()
             #self.rerouteCFDOperations()
             #self.marketRuleOperations()
             #self.pnlOperations_req()
@@ -2199,7 +2199,7 @@ def main():
     # cmdLineParser.add_option("-c", action="store_True", dest="use_cache", default = False, help = "use the cache")
     # cmdLineParser.add_option("-f", action="store", type="string", dest="file", default="", help="the input file")
     cmdLineParser.add_argument("-p", "--port", action="store", type=int,
-                               dest="port", default=7496, help="The TCP port to use")
+                               dest="port", default=7497, help="The TCP port to use")
     cmdLineParser.add_argument("-C", "--global-cancel", action="store_true",
                                dest="global_cancel", default=False,
                                help="whether to trigger a globalCancel req")
