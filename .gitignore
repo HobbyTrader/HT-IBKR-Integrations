@@ -1,5 +1,6 @@
 # project ignores
 env/ 
+BK/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

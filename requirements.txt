@@ -1,4 +1,11 @@
-ib_async
-pandas
-requests
-xmltodict
+# IBKR API - installed from local source path, point to your downloaded files from Interactive Brokers
+-e "C:\TWS API\source\pythonclient"
+
+# Required dependency
+protobuf==5.29.3
+
+# Other project dependancies optional
+# ib_async
+# pandas
+# requests
+# xmltodict
