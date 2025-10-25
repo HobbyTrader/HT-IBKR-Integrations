@@ -22,17 +22,15 @@ pip install -e .[dev]
 ```
 > This will create a virtual environment in your project root folder, update pip, and install dependencies to run and modify the package  
 
-# Test installation
-To test if the ht_tools package was installed properly, check if the __version__ attribute exists on import.  
-From the terminal run:  
+# Test installation  
+From the terminal run the command:  
 ```
-pytest ht_tools\tests -v -x -s -k test_version_attribute_exists
-``` 
-You should see a response ending with a message similar to:  
-``` 
-ht_tools/tests/test_core/test_setup.py::TestSetup::test_version_attribute_exists PASSED  
-====================== 1 passed, x deselected in 0.05s ================================
-``` 
+ht-tools
+```  
+You should see an output like ```ht-tools version: 0.1.0```  
+
+# Documentation  
+Check the [wiki page](https://github.com/HobbyTrader/HT-IBKR-Integrations/wiki) for help (wirk in progress)
 
 # References  
 - Official [TWS AI Documentation](https://www.interactivebrokers.com/campus/ibkr-api-page/twsapi-doc/#api-introduction)  

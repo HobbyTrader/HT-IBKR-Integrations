@@ -1,0 +1,8 @@
+{
+  "IBKR": {
+    "HOST": "localhost",
+    "PORT": 7497,
+    "CLIENT_ID": 0
+  },
+  "loglevel": "ERROR"
+}
