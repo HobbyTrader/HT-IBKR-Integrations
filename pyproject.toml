@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ht-tools"
-version = "0.1.1"
+version = "0.1.0"
 description = "Utilities and tools for algorithmic trading using IBKR TWS API"
 readme = "README.md"
 authors = [
@@ -30,23 +30,11 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
-    "pytest-cov>=4.1",
 ]
-
-[project.urls]
-Homepage = "https://github.com/yourusername/HT-IBKR-INTEGRATIONS"
-Repository = "https://github.com/yourusername/HT-IBKR-INTEGRATIONS"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["ht_tools*"]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = "--strict-markers --strict-config"
 
 [project.scripts]
 ht-tools = "ht_tools:version"
