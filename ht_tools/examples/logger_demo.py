@@ -1,5 +1,23 @@
-import time
-import logging
+"""
+Demo script for testing the LoggerManager class.
+
+This script demonstrates how to use the LoggerManager class to initialize logging
+and log messages with different levels of detail.
+
+Usage:
+    python demo_logger.py
+
+Requirements:
+    - ht_tools.utils module with load_config function
+    - ht_tools.utils.logger module with LoggerManager class
+
+This script will:
+    1. Load configuration from a JSON file using load_config function.
+    2. Initialize the logger using LoggerManager.
+    3. Log a success message.
+    4. Test logging of exceptions with and without traceback details.
+    5. Wait for user input before exiting.
+"""
 
 from ht_tools.utils import load_config
 from ht_tools.utils.logger import LoggerManager

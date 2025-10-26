@@ -4,5 +4,9 @@
     "PORT": 7497,
     "CLIENT_ID": 0
   },
-  "loglevel": "ERROR"
+  "logging": {
+    "logpath": "LOG",
+    "loglevel": "DEBUG",
+    "consolelevel": "DEBUG"
+  }
 }
