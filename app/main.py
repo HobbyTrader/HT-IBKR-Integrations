@@ -1,0 +1,38 @@
+import os.path
+import time
+import logging
+
+from app.core.config import load_config
+
+from ibapi import wrapper
+from ibapi.client import EClient
+
+# from services.ContractDataService import ContractDataService
+
+config = load_config()
+
+def main():
+    def SetupLogger():
+        if not os.path.exists("log"):
+            os.makedirs("log")
+
+        time.strftime("pyibapi.%Y%m%d_%H%M%S.log")
+
+        recfmt = '(%(threadName)s) %(asctime)s.%(msecs)03d %(levelname)s %(filename)s:%(lineno)d %(message)s'
+
+        timefmt = '%y%m%d_%H:%M:%S'
+
+        # logging.basicConfig( level=logging.DEBUG,
+        #                    format=recfmt, datefmt=timefmt)
+        logging.basicConfig(filename=time.strftime("log/IBKRIntegration.%y%m%d_%H%M%S.log"),
+                            filemode="w",
+                            level=logging.INFO,
+                            format=recfmt, datefmt=timefmt)
+        logger = logging.getLogger()
+        console = logging.StreamHandler()
+        # console.setLevel(logging.ERROR)
+        console.setLevel(getattr(logging, config.get("loglevel", config["loglevel"]).upper(), logging.ERROR))
+        logger.addHandler(console)
+
+if __name__ == "__main__":
+    main()
