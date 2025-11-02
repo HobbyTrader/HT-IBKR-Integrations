@@ -1,4 +1,5 @@
 import logging
+import time
 
 from app.core.ibapi import IBApi
 
@@ -25,10 +26,10 @@ class ScannerService(IBApi):
         super().nextValidId(orderId)
         print(f"[ScannerService] Received nextValidId: {orderId} - requesting scanner parameters")
 
-    @iswrapper
-    def nextId(self):
-        super().nextId(self)
-        print(f"[ScannerService] Call to nextId")
+    # @iswrapper
+    # def nextId(self):
+    #     super().nextId(self)
+    #     print(f"[ScannerService] Call to nextId")
 
     @iswrapper
     def scannerParameters(self, xml: str):
@@ -36,12 +37,16 @@ class ScannerService(IBApi):
         print("ScannerParameters received.")
         open('log/scanner.xml', 'w').write(xml)
 
+    @iswrapper
+    def scannerData(self, reqId, rank, contractDetails, distance, benchmark, projection, legsStr):
+        print(f"scannerData. reqId: {reqId}, rank: {rank}, contractDetails: {contractDetails}, distance: {distance}, benchmark: {benchmark}, projection: {projection}, legsStr: {legsStr}.")
+
     def get_parameters(self):
         self.reqScannerParameters()
         time.sleep(1)
 
-    def get_scannerResult(self, scannerSubscription, filterTagValues):
-        self.reqScannerSubscription(self.nextId(), scannerSubscription, [], filterTagvalues)
+    def get_scannerResult(self, scannerSubscription, scannerOptions, filterTagValues):
+        self.reqScannerSubscription(self.nextId(), scannerSubscription, scannerOptions, filterTagValues)
         time.sleep(1)
 
     

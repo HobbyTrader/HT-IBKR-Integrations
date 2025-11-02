@@ -9,7 +9,7 @@ from app.core.ibapi import IBApi
 from ibapi.wrapper import EWrapper
 from ibapi.client import *
 from ibapi.ticktype import TickTypeEnum
-from ibapi.Tag_value import *
+from ibapi.tag_value import *
 
 from app.services.scanner import ScannerService
 
@@ -31,8 +31,17 @@ def main():
 
     scanSub = ScannerSubscription()
     scanSub.instrument = "STK"
-    # scanSub.
+    scanSub.locationCode = "STK.US.MAJOR"
+    scanSub.scanCode = "TOP_OPEN_PERC_GAIN"
 
+    scan_options = []   
+
+    filter_options = [
+        TagValue("volumeAbove", "10000"),
+        TagValue("marketCapBelow1e6", "1000"),
+        TagValue("priceAbove", "1"),]
+
+    scanner.get_scannerResult(scanSub, scan_options, filter_options)
     scanner.disconnect()
 
     # myContract = Contract()
