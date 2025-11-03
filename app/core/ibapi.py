@@ -7,7 +7,7 @@ from ibapi.client import *
 from app.utils.logger import LoggerManager
 
 class IBApi(EClient, EWrapper):
-    def __init__(self, config: dict):
+    def __init__(self, config: dict, logger: LoggerManager):
         EWrapper.__init__(self)
         EClient.__init__(self, wrapper=self)
 
@@ -16,8 +16,7 @@ class IBApi(EClient, EWrapper):
         self.PORT = config.get("PORT", 7497)             # Sets default value for PORT if not specified (default is paper trading)
         self.CLIENT_ID = config.get("CLIENTID", 1)       # Sets default client_id if not specified
 
-        self.logger = LoggerManager.get_logger()         
-        self.logger.info(f"Logging initialized successfully.") 
+        self.logger = logger        
         self.connection_thread = None
         self._is_connected = False
 
@@ -54,7 +53,7 @@ class IBApi(EClient, EWrapper):
             if self.isConnected():
                 self.disconnect() # Call back will set the _is_connected flag to False and log the event
                 # self._is_connected = False
-                # self.logger.info(f"Disconnected from IBKR TWS at {self.HOST}:{self.PORT} (Client ID: {self.CLIENT_ID})")
+                self.logger.info(f"Disconnected from IBKR TWS at {self.HOST}:{self.PORT} (Client ID: {self.CLIENT_ID})")
             else:
                 self.logger.warning("Attempted to disconnect, but not currently connected.")
 

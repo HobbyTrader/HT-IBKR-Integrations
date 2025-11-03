@@ -18,34 +18,27 @@ def main():
 
     LoggerManager.initialize(config.get("logging"))
     logger = LoggerManager.get_logger()
-    logger.info("Logging initialized successfully.")
+    logger.info("[MAIN] - Logging initialized successfully.")
 
-    logger.info("Starting HT-IBKR-Integrations Application")
+    logger.info("[MAIN] - Starting HT-IBKR-Integrations Application")
 
     # Initialize services
     ibkr_info = config.get("IBKR", {})
-    with ScannerService(ibkr_info) as scanner:
-        threading.Thread(target=scanner.run).start()
-        time.sleep(5)
+    with ScannerService(ibkr_info, logger) as scanner:
+        scanSub = ScannerSubscription()
+        scanSub.instrument = "STK"
+        scanSub.locationCode = "STK.US.MAJOR"
+        scanSub.scanCode = "HIGH_OPEN_GAP" # Top % Gainers After Hours
 
-    # logging.info("Requesting Market Data...")
-    # scanner.get_parameters()
+        scan_options = []   
 
-    scanSub = ScannerSubscription()
-    scanSub.instrument = "STK"
-    scanSub.locationCode = "STK.US.MAJOR"
-    scanSub.scanCode = "HIGH_OPEN_GAP" # Top % Gainers After Hours
+        filter_options = [
+            TagValue("volumeAbove", "10000"),
+            TagValue("priceAbove", "10"),
+            TagValue("priceBelow", "50"),]
 
-    scan_options = []   
-
-    filter_options = [
-        TagValue("volumeAbove", "10000"),
-        TagValue("priceAbove", "10"),
-        TagValue("priceBelow", "50"),]
-
-    scanner.get_scannerResult(scanSub, scan_options, filter_options)
-    scanner.disconnect()
-
+        scanner.get_scannerResult(scanSub, scan_options, filter_options)
+    
     # myContract = Contract()
     # myContract.symbol = "AAPL"
     # myContract.secType = "STK"

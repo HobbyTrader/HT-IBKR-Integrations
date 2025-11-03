@@ -10,7 +10,7 @@
   },
   "logging": {
     "consolelevel": "DEBUG",
-    "loglevel": "DEBUG",
+    "loglevel": "INFO",
     "logpath": "log/"
   }
 }
