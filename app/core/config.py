@@ -1,8 +1,12 @@
-import json
-from pathlib import Path
+# import json
+# from pathlib import Path
+# from importlib.resources import files
 
-CONFIG_PATH = Path(__file__).parent / "config.json"
 
-def load_config():
-    with open(CONFIG_PATH) as file:
-        return json.load(file)
+# def load_config() -> json:
+#     _config_file = files('app.core').joinpath('config.json')
+#     if not _config_file.is_file():
+#         # Non blocking warning since logging is not setup yet
+#         print(f"> WARNING - Config File not found: {_config_file}")  
+#     with open(_config_file) as file:
+#         return json.load(file)

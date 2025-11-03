@@ -1,5 +1,5 @@
-# project ignores
-env/ 
+# log ignores
+log/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,9 +1,7 @@
 import time
-import logging
 import threading
 
-from app.core.config import load_config
-from app.core.log import SetupLogger
+from app.core import load_config
 from app.core.ibapi import IBApi
 
 from ibapi.wrapper import EWrapper
@@ -12,17 +10,23 @@ from ibapi.ticktype import TickTypeEnum
 from ibapi.tag_value import *
 
 from app.services.scanner import ScannerService
+from app.utils.logger import LoggerManager
 
-config = load_config()
 
 def main():
-    SetupLogger()
-    logging.info("Starting HT-IBKR-Integrations Application")
+    config = load_config()
+
+    LoggerManager.initialize(config.get("logging"))
+    logger = LoggerManager.get_logger()
+    logger.info("Logging initialized successfully.")
+
+    logger.info("Starting HT-IBKR-Integrations Application")
 
     # Initialize services
 
-    scanner = ScannerService()
+    scanner = ScannerService(config.get("IBKR"))
     scanner.connect(config["IBKR"]["HOST"], config["IBKR"]["PORT"], config["IBKR"]["CLIENTID"])
+    
     threading.Thread(target=scanner.run).start()
     time.sleep(1)
 
@@ -64,7 +68,7 @@ def main():
 
    
 
-    logging.info("HT-IBKR-Integrations Application Finished")
+    logger.info("HT-IBKR-Integrations Application Finished")
     
 
 if __name__ == "__main__":
