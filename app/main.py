@@ -1,9 +1,7 @@
 import time
-import logging
 import threading
 
-from app.core.config import load_config
-from app.core.log import SetupLogger
+from app.core import load_config
 from app.core.ibapi import IBApi
 
 from ibapi.wrapper import EWrapper
@@ -12,38 +10,35 @@ from ibapi.ticktype import TickTypeEnum
 from ibapi.tag_value import *
 
 from app.services.scanner import ScannerService
+from app.utils.logger import LoggerManager
 
-config = load_config()
 
 def main():
-    SetupLogger()
-    logging.info("Starting HT-IBKR-Integrations Application")
+    config = load_config()
+
+    LoggerManager.initialize(config.get("logging"))
+    logger = LoggerManager.get_logger()
+    logger.info("[MAIN] - Logging initialized successfully.")
+
+    logger.info("[MAIN] - Starting HT-IBKR-Integrations Application")
 
     # Initialize services
+    ibkr_info = config.get("IBKR", {})
+    with ScannerService(ibkr_info, logger) as scanner:
+        scanSub = ScannerSubscription()
+        scanSub.instrument = "STK"
+        scanSub.locationCode = "STK.US.MAJOR"
+        scanSub.scanCode = "HIGH_OPEN_GAP" # Top % Gainers After Hours
 
-    scanner = ScannerService()
-    scanner.connect(config["IBKR"]["HOST"], config["IBKR"]["PORT"], config["IBKR"]["CLIENTID"])
-    threading.Thread(target=scanner.run).start()
-    time.sleep(1)
+        scan_options = []   
 
-    # logging.info("Requesting Market Data...")
-    scanner.get_parameters()
+        filter_options = [
+            TagValue("volumeAbove", "10000"),
+            TagValue("priceAbove", "10"),
+            TagValue("priceBelow", "50"),]
 
-    scanSub = ScannerSubscription()
-    scanSub.instrument = "STK"
-    scanSub.locationCode = "STK.US.MAJOR"
-    scanSub.scanCode = "TOP_OPEN_PERC_GAIN"
-
-    scan_options = []   
-
-    filter_options = [
-        TagValue("volumeAbove", "10000"),
-        TagValue("marketCapBelow1e6", "1000"),
-        TagValue("priceAbove", "1"),]
-
-    scanner.get_scannerResult(scanSub, scan_options, filter_options)
-    scanner.disconnect()
-
+        scanner.get_scannerResult(scanSub, scan_options, filter_options)
+    
     # myContract = Contract()
     # myContract.symbol = "AAPL"
     # myContract.secType = "STK"
@@ -64,7 +59,7 @@ def main():
 
    
 
-    logging.info("HT-IBKR-Integrations Application Finished")
+    logger.info("HT-IBKR-Integrations Application Finished")
     
 
 if __name__ == "__main__":
