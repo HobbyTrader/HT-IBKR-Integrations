@@ -32,14 +32,14 @@ def main():
     scanSub = ScannerSubscription()
     scanSub.instrument = "STK"
     scanSub.locationCode = "STK.US.MAJOR"
-    scanSub.scanCode = "TOP_OPEN_PERC_GAIN"
+    scanSub.scanCode = "HIGH_OPEN_GAP" # Top % Gainers After Hours
 
     scan_options = []   
 
     filter_options = [
         TagValue("volumeAbove", "10000"),
-        TagValue("marketCapBelow1e6", "1000"),
-        TagValue("priceAbove", "1"),]
+        TagValue("priceAbove", "10"),
+        TagValue("priceBelow", "50"),]
 
     scanner.get_scannerResult(scanSub, scan_options, filter_options)
     scanner.disconnect()

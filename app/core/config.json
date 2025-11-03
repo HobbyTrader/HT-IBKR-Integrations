@@ -1,9 +1,7 @@
 {
   "database": {
-    "host": "",
-    "port": 0,
-    "user": "",
-    "password": ""
+    "filename": "htibkr.db",
+    "tabledefinitions": "app/core/sql/table_definitions.sql"
   },
   "IBKR": {
     "HOST": "localhost",

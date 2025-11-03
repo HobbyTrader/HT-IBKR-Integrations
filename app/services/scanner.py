@@ -39,14 +39,15 @@ class ScannerService(IBApi):
 
     @iswrapper
     def scannerData(self, reqId, rank, contractDetails, distance, benchmark, projection, legsStr):
-        print(f"scannerData. reqId: {reqId}, rank: {rank}, contractDetails: {contractDetails}, distance: {distance}, benchmark: {benchmark}, projection: {projection}, legsStr: {legsStr}.")
+        print("Scanner Data received")
+        logging.info(f"scannerData. reqId: {reqId}, rank: {rank}, contractDetails: {contractDetails}, distance: {distance}, benchmark: {benchmark}, projection: {projection}, legsStr: {legsStr}.")
 
     def get_parameters(self):
         self.reqScannerParameters()
-        time.sleep(1)
+        time.sleep(5)
 
     def get_scannerResult(self, scannerSubscription, scannerOptions, filterTagValues):
         self.reqScannerSubscription(self.nextId(), scannerSubscription, scannerOptions, filterTagValues)
-        time.sleep(1)
+        time.sleep(10)
 
     
