@@ -14,7 +14,7 @@ class IBApi(EClient, EWrapper):
         # Validate and load IBKR connection info
         self.HOST = config.get("HOST", "127.0.0.1")      # Sets default value for HOST if not specified
         self.PORT = config.get("PORT", 7497)             # Sets default value for PORT if not specified (default is paper trading)
-        self.CLIENT_ID = config.get("CLIENT_ID", 1)      # Sets default client_id if not specified
+        self.CLIENT_ID = config.get("CLIENTID", 1)       # Sets default client_id if not specified
 
         self.logger = LoggerManager.get_logger()         
         self.logger.info(f"Logging initialized successfully.") 
@@ -74,9 +74,9 @@ class IBApi(EClient, EWrapper):
     # -----------------------------------------------------
     # Optional destructor (not strictly required)
     # -----------------------------------------------------
-    def __del__(self):
-        if self.isConnected():
-            self.close_connection()
+    # def __del__(self):
+    #     if self.isConnected():
+    #         self.close_connection()
 
     # -----------------------------------------------------
     # Callback overrides from EWrapper
@@ -85,6 +85,7 @@ class IBApi(EClient, EWrapper):
         self.logger.warning(f"Connection to TWS closed. HOST: {self.HOST}, PORT: {self.PORT}, CLIENT_ID: {self.CLIENT_ID}")
 
     def nextValidId(self, orderId: int):
+        self.orderId = orderId
         self.logger.info(f"Next valid order ID: {orderId}")
     
     def nextId(self):

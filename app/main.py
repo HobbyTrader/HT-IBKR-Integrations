@@ -23,15 +23,13 @@ def main():
     logger.info("Starting HT-IBKR-Integrations Application")
 
     # Initialize services
-
-    scanner = ScannerService(config.get("IBKR"))
-    scanner.connect(config["IBKR"]["HOST"], config["IBKR"]["PORT"], config["IBKR"]["CLIENTID"])
-    
-    threading.Thread(target=scanner.run).start()
-    time.sleep(1)
+    ibkr_info = config.get("IBKR", {})
+    with ScannerService(ibkr_info) as scanner:
+        threading.Thread(target=scanner.run).start()
+        time.sleep(5)
 
     # logging.info("Requesting Market Data...")
-    scanner.get_parameters()
+    # scanner.get_parameters()
 
     scanSub = ScannerSubscription()
     scanSub.instrument = "STK"

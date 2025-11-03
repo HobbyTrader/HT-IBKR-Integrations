@@ -8,9 +8,9 @@ from ibapi.client import *
 from ibapi.utils import iswrapper
 
 class ScannerService(IBApi):
-    def __init__(self) :
+    def __init__(self, config) :
     # def __init__(self, scanner_repository):
-        super().__init__()
+        super().__init__(config)
         print("Scanner initialzed")
         # self.scanner_repository = scanner_repository
 
