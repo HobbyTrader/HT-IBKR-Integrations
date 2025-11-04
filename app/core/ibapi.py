@@ -94,14 +94,28 @@ class IBApi(EClient, EWrapper):
     def error(self, *args):
         """Override the error callback to log errors."""
         errorCode = args[2] if len(args) > 2 else None
-        if errorCode in [1100, 2110]:
-            self.logger.info(f"IBKR Error event: {args} -> (reqId, timestamp, errorCode, errorString, advancedOrderRejectionJson)")
-        elif errorCode in [1101, 1102, 2103, 2104, 2105, 2106, 2157, 2158]:
-            self.logger.warning(f"IBKR Error event: {args} -> (reqId, timestamp, errorCode, errorString, advancedOrderRejectionJson)")
-        elif errorCode in range(200, 1000):
-            self.logger.error(f"IBKR Error event: {args} -> (reqId, timestamp, errorCode, errorString, advancedOrderRejectionJson)")
-        else:
-            self.logger.critical(f"IBKR Error event: {args} -> (reqId, timestamp, errorCode, errorString, advancedOrderRejectionJson)")
+        # if errorCode in [1100, 2110]:
+        #     self.logger.info(f"IBKR Error event: {args} -> (reqId, timestamp, errorCode, errorString, advancedOrderRejectionJson)")
+        # elif errorCode in [1101, 1102, 2103, 2104, 2105, 2106, 2157, 2158]:
+        #     self.logger.warning(f"IBKR Error event: {args} -> (reqId, timestamp, errorCode, errorString, advancedOrderRejectionJson)")
+        # elif errorCode in range(200, 1000):
+        #     self.logger.error(f"IBKR Error event: {args} -> (reqId, timestamp, errorCode, errorString, advancedOrderRejectionJson)")
+        # else:
+        #     self.logger.critical(f"IBKR Error event: {args} -> (reqId, timestamp, errorCode, errorString, advancedOrderRejectionJson)")
+    
+        # Refactor in match - case
+        match errorCode :
+            # INFO
+            case  2104 | 2106 | 2110 | 2119 | 2152 | 2158:
+                self.logger.info(f"IBKR Info event: {args} -> (reqId, timestamp, errorCode, errorString, advancedOrderRejectionJson)")
+            # WARNING
+            case range(1100, 1300) | 2103 | 2105 | 2137:
+                self.logger.warning(f"IBKR Warning event: {args} -> (reqId, timestamp, errorCode, errorString, advancedOrderRejectionJson)")
+            # ERROR
+            case range(100, 1000) | range(2100, 11000):
+                self.logger.error(f"IBKR Error event: {args} -> (reqId, timestamp, errorCode, errorString, advancedOrderRejectionJson)")
+            case _:
+                self.logger.critical(f"IBKR Critical event: {args} -> (reqId, timestamp, errorCode, errorString, advancedOrderRejectionJson)")
     
     # Severity	    Typical Codes	                    Meaning
     # ------------- --------------------------------    ----------------------------------------

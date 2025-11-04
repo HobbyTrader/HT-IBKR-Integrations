@@ -1,22 +1,35 @@
 import sqlite3
 import os
 
-class SQLiteManager:
-    def __init__(self, db_path, table_definitions_file):
-        self.db_path = db_path
-        self.table_definitions_file = table_definitions_file
-        self.conn = None
+from app.utils.logger import LoggerManager
 
+class SQLiteManager:
+    _initialized = False
+
+    @classmethod
+    def initialize(self, logger: LoggerManager, config: dict):
+        """Initialize the SQLiteManager with configuration."""
+        self.logger = logger
+        self.db_path = config.get("filename", "data/ht_ibkr_integrations.db")
+        self.table_definitions_file = config.get("tabledefinitions", "app/core/sqllite_tables.sql")
+
+        if self._initialized:
+            return  # avoid double setup
+        
+        self.connect()
+        self.verify_and_create_tables()
+        self._initialized = True
+    
     def connect(self):
         """Connect to the SQLite database (create if not exists)."""
         self.conn = sqlite3.connect(self.db_path)
-        print(f"Connected to database at {self.db_path}")
+        self.logger.debug(f"Connected to database at {self.db_path}")
 
     def close(self):
         """Close the database connection."""
         if self.conn:
             self.conn.close()
-            print("Connection closed.")
+            self.logger.debug("Connection closed.")
 
     def table_exists(self, table_name):
         """Check if a table exists in the database."""
@@ -79,7 +92,19 @@ class SQLiteManager:
         tables = self.get_required_tables()
         missing_tables = [t for t in tables if not self.table_exists(t)]
         if missing_tables:
-            print(f"Missing tables: {missing_tables}. Creating tables...")
+            self.logger.info(f"Missing tables: {missing_tables}. Creating tables...")
             self.create_tables()
         else:
-            print("All required tables are present.")
+            self.logger.debug("All required tables are present.")
+
+    def get_connection(self):
+        """Get the current database connection."""
+        if not self.conn:
+            self.connect()
+        return self.conn
+    
+    def get_cursor(self):
+        """Get a new cursor from the current connection."""
+        if not self.conn:
+            self.connect()
+        return self.conn.cursor()

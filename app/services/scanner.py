@@ -7,7 +7,7 @@ from ibapi.client import *
 from ibapi.utils import iswrapper
 
 class ScannerService(IBApi):
-    def __init__(self, config, logger) :
+    def __init__(self, config, logger, dbconn) :
         super().__init__(config, logger)
         self.logger.debug("[ScannerService] - Scanner initialzed")
 
@@ -18,8 +18,7 @@ class ScannerService(IBApi):
 
     @iswrapper
     def scannerData(self, reqId, rank, contractDetails, distance, benchmark, projection, legsStr):
-        self.logger.debug("[ScannerService] - Scanner Data received")
-        self.logger.info(f"[ScannerService] - ScannerData. reqId: {reqId}, rank: {rank}, contractDetails: {contractDetails}, distance: {distance}, benchmark: {benchmark}, projection: {projection}, legsStr: {legsStr}.")
+        self.logger.debug(f"[ScannerService] - ScannerData. reqId: {reqId}, rank: {rank}, contractDetails: {contractDetails}, distance: {distance}, benchmark: {benchmark}, projection: {projection}, legsStr: {legsStr}.")
 
     def get_parameters(self):
         self.reqScannerParameters()
