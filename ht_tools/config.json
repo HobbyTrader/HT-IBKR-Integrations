@@ -6,7 +6,9 @@
   },
   "logging": {
     "logpath": "LOG",
+    "logname": "HT_TOOLS.log",
     "loglevel": "DEBUG",
-    "consolelevel": "DEBUG"
+    "consolelevel": "DEBUG",
+    "backupcount": 2
   }
 }
