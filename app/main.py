@@ -21,9 +21,9 @@ def initLogger(config):
 
 # Initialize Database
 def initDatabase(logger: LoggerManager, config):
-    SQLiteManager.initialize(logger, config)
+    dbconn = SQLiteManager(logger, config)
     logger.info("[MAIN] - Database initialized successfully.")
-    return SQLiteManager.get_connection()
+    return dbconn.get_connection()
 
 def main(logger: LoggerManager, dbconn: SQLiteManager):
     logger.debug("[MAIN] - Starting HT-IBKR-Integrations Application")

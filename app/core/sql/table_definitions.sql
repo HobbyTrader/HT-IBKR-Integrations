@@ -1,6 +1,7 @@
 -- Script de création de table pour exemple SQLite
 CREATE TABLE IF NOT EXISTS scannerresults (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    strategy_id INTEGER NOT NULL,
     req_id INTEGER NOT NULL, 
     rank INTEGER NOT NULL, 
     contract_id INTEGER NOT NULL,
@@ -9,7 +10,7 @@ CREATE TABLE IF NOT EXISTS scannerresults (
     contract_currency TEXT NOT NULL,
     -- chiffres en lien avec le scanner => valeurs en lien avec le ranking du scanner
     create_date  TEXT NOT NULL DEFAULT (datetime('now')),
-    update_date  TEXT NOT NULL DEFAULT (datetime('now'),
+    update_date  TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (strategy_id) REFERENCES strategies(strategy_id)
 );
 
@@ -17,7 +18,7 @@ CREATE TABLE IF NOT EXISTS strategies (
     strategy_id INTEGER PRIMARY KEY AUTOINCREMENT,
     strategy_details TEXT NOT NULL,
     create_date  TEXT NOT NULL DEFAULT (datetime('now')),
-    update_date  TEXT NOT NULL DEFAULT (datetime('now')
+    update_date  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 -- Table des ordres passés par les stratégies
@@ -26,7 +27,7 @@ CREATE TABLE IF NOT EXISTS strategies (
 -- On pourra aussi vérifier ce qui n'est pas encore vendu afin de forcer une vente si besoin
 CREATE TABLE IF NOT EXISTS orders (
     order_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    strategy_id INTEGER,
+    strategy_id INTEGER NOT NULL,
     order_details TEXT NOT NULL,
     status TEXT NOT NULL,
     amount_buy REAL NOT NULL DEFAULT 0,

@@ -4,18 +4,13 @@ import os
 from app.utils.logger import LoggerManager
 
 class SQLiteManager:
-    _initialized = False
-
-    @classmethod
-    def initialize(self, logger: LoggerManager, config: dict):
+    def __init__(self, logger: LoggerManager, config: dict):
+    # def initialize(self, logger: LoggerManager, config: dict):
         """Initialize the SQLiteManager with configuration."""
         self.logger = logger
         self.db_path = config.get("filename", "data/ht_ibkr_integrations.db")
         self.table_definitions_file = config.get("tabledefinitions", "app/core/sqllite_tables.sql")
 
-        if self._initialized:
-            return  # avoid double setup
-        
         self.connect()
         self.verify_and_create_tables()
         self._initialized = True
@@ -39,6 +34,7 @@ class SQLiteManager:
         """, (table_name,))
         exists = cursor.fetchone()[0] == 1
         cursor.close()
+        self.logger.debug(f"Table '{table_name}' exists: {exists}")
         return exists
 
     def get_required_tables(self):
@@ -61,9 +57,9 @@ class SQLiteManager:
                 parts = line.split()
                 # Find table name position (after CREATE TABLE and optional IF NOT EXISTS)
                 if parts[2] == "IF":
-                    table_name = parts[5]
+                    table_name = parts[5].lower()
                 else:
-                    table_name = parts[2]
+                    table_name = parts[2].lower()
                 # Remove backticks, quotes if any
                 table_name = table_name.strip('`"')
                 tables.append(table_name)

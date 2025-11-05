@@ -1,6 +1,6 @@
 {
   "database": {
-    "filename": "htibkr.db",
+    "filename": "app/htibkr.db",
     "tabledefinitions": "app/core/sql/table_definitions.sql"
   },
   "IBKR": {
