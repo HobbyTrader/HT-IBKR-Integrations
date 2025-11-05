@@ -38,3 +38,4 @@ include = ["ht_tools*"]
 
 [project.scripts]
 ht-tools = "ht_tools:version"
+
