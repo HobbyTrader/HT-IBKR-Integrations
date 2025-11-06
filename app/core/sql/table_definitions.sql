@@ -37,6 +37,9 @@ CREATE TABLE IF NOT EXISTS orders (
     amount_buy REAL NOT NULL DEFAULT 0,
     amount_sell REAL,
     amount_currency TEXT NOT NULL, -- USD, EUR, etc. vient de la stratégie
+    instrument_price REAL NOT NULL,
+    order_stop_loss REAL NOT NULL,
+    order_take_profit REAL NOT NULL,
     create_date  TEXT NOT NULL DEFAULT (datetime('now')),
     update_date  TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (strategy_id) REFERENCES strategies(strategy_id)
