@@ -1,14 +1,15 @@
 import time
 
-from app.core.ibapiconnector import IBApiConnector
+from app.utils.ibapiconnector import IBApiConnector
+from app.utils.sqllitemanager import SQLiteManager
 
-from ibapi.wrapper import EWrapper
 from ibapi.client import *
 from ibapi.utils import iswrapper
 
 class ScannerService(IBApiConnector):
-    def __init__(self, config, logger, dbconn) :
-        super().__init__(config, logger)
+    def __init__(self, logger, config): 
+        super().__init__( logger, config.get("IBKR", {}) )
+        self.dbconn = SQLiteManager(logger, config.get("database", {}))
         self.logger.debug("[ScannerService] - Scanner initialzed")
 
     @iswrapper
@@ -18,7 +19,11 @@ class ScannerService(IBApiConnector):
 
     @iswrapper
     def scannerData(self, reqId, rank, contractDetails, distance, benchmark, projection, legsStr):
+        cursor = self.dbconn.conn.cursor()
         self.logger.debug(f"[ScannerService] - ScannerData. reqId: {reqId}, rank: {rank}, contractDetails: {contractDetails}, distance: {distance}, benchmark: {benchmark}, projection: {projection}, legsStr: {legsStr}.")
+        cursor.execute("""INSERT INTO scanner_results (req_id, rank, contract_id, contract_symbol, contract_sectype, contract_currency, trading_class, exchange) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                            (reqId, rank, contractDetails.contract.conId, contractDetails.contract.symbol, contractDetails.contract.secType, contractDetails.contract.currency, contractDetails.contract.tradingClass, contractDetails.contract.exchange))
+        self.dbconn.conn.commit()
 
     def get_parameters(self):
         self.reqScannerParameters()

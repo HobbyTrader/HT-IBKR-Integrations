@@ -7,7 +7,7 @@ from ibapi.client import *
 from app.utils.logger import LoggerManager
 
 class IBApiConnector(EClient, EWrapper):
-    def __init__(self, config: dict, logger: LoggerManager):
+    def __init__(self, logger: LoggerManager, config: dict):
         EWrapper.__init__(self)
         EClient.__init__(self, wrapper=self)
 
@@ -106,7 +106,7 @@ class IBApiConnector(EClient, EWrapper):
         # Refactor in match - case
         match errorCode :
             # INFO
-            case  2104 | 2106 | 2110 | 2119 | 2152 | 2158:
+            case  165 | 2104 | 2106 | 2110 | 2119 | 2152 | 2158:
                 self.logger.info(f"IBKR Info event: {args} -> (reqId, timestamp, errorCode, errorString, advancedOrderRejectionJson)")
             # WARNING
             case range(1100, 1300) | 2103 | 2105 | 2137:

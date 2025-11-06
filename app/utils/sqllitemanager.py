@@ -5,7 +5,6 @@ from app.utils.logger import LoggerManager
 
 class SQLiteManager:
     def __init__(self, logger: LoggerManager, config: dict):
-    # def initialize(self, logger: LoggerManager, config: dict):
         """Initialize the SQLiteManager with configuration."""
         self.logger = logger
         self.db_path = config.get("filename", "data/ht_ibkr_integrations.db")
@@ -17,7 +16,7 @@ class SQLiteManager:
     
     def connect(self):
         """Connect to the SQLite database (create if not exists)."""
-        self.conn = sqlite3.connect(self.db_path)
+        self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.logger.debug(f"Connected to database at {self.db_path}")
 
     def close(self):

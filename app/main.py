@@ -1,8 +1,4 @@
-import time
-import threading
-
 from app.core import load_config
-from app.core.sqllite import SQLiteManager
 
 from ibapi.wrapper import EWrapper
 from ibapi.client import *
@@ -11,6 +7,7 @@ from ibapi.tag_value import *
 
 from app.services.scanner import ScannerService
 from app.utils.logger import LoggerManager
+from app.utils.sqllitemanager import SQLiteManager
 
 # Initialize Logger
 def initLogger(config):
@@ -23,18 +20,18 @@ def initLogger(config):
 def initDatabase(logger: LoggerManager, config):
     dbconn = SQLiteManager(logger, config)
     logger.info("[MAIN] - Database initialized successfully.")
-    return dbconn.get_connection()
+    return dbconn
 
-def main(logger: LoggerManager, dbconn: SQLiteManager):
+def main(logger: LoggerManager):
     logger.debug("[MAIN] - Starting HT-IBKR-Integrations Application")
 
     # Get scanner market data
-    ibkr_config = config.get("IBKR", {})
-    with ScannerService(ibkr_config, logger, dbconn) as scanner:
+    with ScannerService(logger, config) as scanner:
         scanSub = ScannerSubscription()
         scanSub.instrument = "STK"
         scanSub.locationCode = "STK.US.MAJOR"
         scanSub.scanCode = "HIGH_OPEN_GAP" # Top % Gainers After Hours
+        # scanSub.scanCode = "TOP_PERC_GAIN"  # Top % Gainers
 
         scan_options = []   
 
@@ -69,7 +66,8 @@ def main(logger: LoggerManager, dbconn: SQLiteManager):
 
 if __name__ == "__main__":
     config = load_config()
-    logger = initLogger(config.get("logging"))
-    dbconn = initDatabase(logger, config.get("database"))
+    # logger = initLogger(config.get("logging"))
+    logger = LoggerManager.initialize(config.get("logging"))
+    # dbconn = initDatabase(logger, config.get("database"))
     
-    main(logger, dbconn)
+    main(logger)

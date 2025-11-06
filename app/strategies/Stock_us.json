@@ -1,0 +1,31 @@
+{
+    "strategies": [
+        {
+            "name": "US Stock High Open Gap Scan",
+            "details": {
+                "instrument": "STK",
+                "locationCode": "STK.US.MAJOR",
+                "scanCode": "HIGH_OPEN_GAP",
+                "scan_options": [],
+                "filter_options": [
+                    {
+                        "name": "volumeAbove",
+                        "value": "10000"
+                    },
+                    {
+                        "name": "priceAbove",
+                        "value": "10"
+                    },
+                    {
+                        "name": "priceBelow",
+                        "value": "50"
+                    }
+                ],
+                "maxResults": 50,
+                "minutes_to_order": 3,
+                "amount_to_invest_per_trade": 1000,
+                "max_trades_per_day": 5
+            }
+        }
+    ]
+}

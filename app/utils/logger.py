@@ -51,6 +51,7 @@ class LoggerManager:
             cls._initialized = True
         except Exception as e:
             print(f"Error initializing logger: {e}")    
+        return logging.getLogger(cls._logger_name)
 
     @classmethod
     def get_logger(cls):

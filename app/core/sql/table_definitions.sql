@@ -1,17 +1,19 @@
 -- Script de création de table pour exemple SQLite
-CREATE TABLE IF NOT EXISTS scannerresults (
+CREATE TABLE IF NOT EXISTS scanner_results (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    strategy_id INTEGER NOT NULL,
+    -- strategy_id INTEGER NOT NULL,
     req_id INTEGER NOT NULL, 
     rank INTEGER NOT NULL, 
     contract_id INTEGER NOT NULL,
     contract_symbol TEXT NOT NULL, 
     contract_sectype TEXT NOT NULL,
     contract_currency TEXT NOT NULL,
+    trading_class TEXT NOT NULL,
+    exchange TEXT,
     -- chiffres en lien avec le scanner => valeurs en lien avec le ranking du scanner
     create_date  TEXT NOT NULL DEFAULT (datetime('now')),
-    update_date  TEXT NOT NULL DEFAULT (datetime('now')),
-    FOREIGN KEY (strategy_id) REFERENCES strategies(strategy_id)
+    update_date  TEXT NOT NULL DEFAULT (datetime('now'))
+    -- FOREIGN KEY (strategy_id) REFERENCES strategies(strategy_id)
 );
 
 CREATE TABLE IF NOT EXISTS strategies (
