@@ -6,7 +6,7 @@ from ibapi.client import *
 
 from app.utils.logger import LoggerManager
 
-class IBApi(EClient, EWrapper):
+class IBApiConnector(EClient, EWrapper):
     def __init__(self, config: dict, logger: LoggerManager):
         EWrapper.__init__(self)
         EClient.__init__(self, wrapper=self)

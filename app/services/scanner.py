@@ -1,12 +1,12 @@
 import time
 
-from app.core.ibapi import IBApi
+from app.core.ibapiconnector import IBApiConnector
 
 from ibapi.wrapper import EWrapper
 from ibapi.client import *
 from ibapi.utils import iswrapper
 
-class ScannerService(IBApi):
+class ScannerService(IBApiConnector):
     def __init__(self, config, logger, dbconn) :
         super().__init__(config, logger)
         self.logger.debug("[ScannerService] - Scanner initialzed")
