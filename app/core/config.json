@@ -1,0 +1,16 @@
+{
+  "database": {
+    "filename": "htibkr.db",
+    "tabledefinitions": "app/core/sql/table_definitions.sql"
+  },
+  "IBKR": {
+    "HOST": "localhost",
+    "PORT": 7497,
+    "CLIENTID": "0"
+  },
+  "logging": {
+    "consolelevel": "DEBUG",
+    "loglevel": "INFO",
+    "logpath": "log/"
+  }
+}

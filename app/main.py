@@ -1,38 +1,66 @@
-import os.path
 import time
-import logging
+import threading
 
-from app.core.config import load_config
+from app.core import load_config
+from app.core.ibapi import IBApi
 
-from ibapi import wrapper
-from ibapi.client import EClient
+from ibapi.wrapper import EWrapper
+from ibapi.client import *
+from ibapi.ticktype import TickTypeEnum
+from ibapi.tag_value import *
 
-# from services.ContractDataService import ContractDataService
+from app.services.scanner import ScannerService
+from app.utils.logger import LoggerManager
 
-config = load_config()
 
 def main():
-    def SetupLogger():
-        if not os.path.exists("log"):
-            os.makedirs("log")
+    config = load_config()
 
-        time.strftime("pyibapi.%Y%m%d_%H%M%S.log")
+    LoggerManager.initialize(config.get("logging"))
+    logger = LoggerManager.get_logger()
+    logger.info("[MAIN] - Logging initialized successfully.")
 
-        recfmt = '(%(threadName)s) %(asctime)s.%(msecs)03d %(levelname)s %(filename)s:%(lineno)d %(message)s'
+    logger.info("[MAIN] - Starting HT-IBKR-Integrations Application")
 
-        timefmt = '%y%m%d_%H:%M:%S'
+    # Initialize services
+    ibkr_info = config.get("IBKR", {})
+    with ScannerService(ibkr_info, logger) as scanner:
+        scanSub = ScannerSubscription()
+        scanSub.instrument = "STK"
+        scanSub.locationCode = "STK.US.MAJOR"
+        scanSub.scanCode = "HIGH_OPEN_GAP" # Top % Gainers After Hours
 
-        # logging.basicConfig( level=logging.DEBUG,
-        #                    format=recfmt, datefmt=timefmt)
-        logging.basicConfig(filename=time.strftime("log/IBKRIntegration.%y%m%d_%H%M%S.log"),
-                            filemode="w",
-                            level=logging.INFO,
-                            format=recfmt, datefmt=timefmt)
-        logger = logging.getLogger()
-        console = logging.StreamHandler()
-        # console.setLevel(logging.ERROR)
-        console.setLevel(getattr(logging, config.get("loglevel", config["loglevel"]).upper(), logging.ERROR))
-        logger.addHandler(console)
+        scan_options = []   
+
+        filter_options = [
+            TagValue("volumeAbove", "10000"),
+            TagValue("priceAbove", "10"),
+            TagValue("priceBelow", "50"),]
+
+        scanner.get_scannerResult(scanSub, scan_options, filter_options)
+    
+    # myContract = Contract()
+    # myContract.symbol = "AAPL"
+    # myContract.secType = "STK"
+    # myContract.currency = "USD"
+    # myContract.exchange = "SMART"
+
+    # app.reqContractDetails(app.nextId(), myContract)
+
+    
+
+    # app.reqMarketDataType(3)  # 3 = Delayed 10-20min
+    # app.reqMktData(app.nextId(), myContract, "225,232", False, False, [])
+
+    # # app.reqRealTimeBars(app.nextId(), myContract, 5, "TRADES", False, [])
+    # app.reqHistoricalData(app.nextId(), myContract, "", "1 D", "5 mins", "TRADES", 1, 1, False, [] )
+
+    # time.sleep(5)  # Wait for responses
+
+   
+
+    logger.info("HT-IBKR-Integrations Application Finished")
+    
 
 if __name__ == "__main__":
     main()
