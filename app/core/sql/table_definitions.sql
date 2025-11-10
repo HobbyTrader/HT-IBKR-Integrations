@@ -1,4 +1,15 @@
 -- Script de création de table pour exemple SQLite
+-- Table des stratégies de trading
+CREATE TABLE IF NOT EXISTS strategies (
+    strategy_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    strategy_name TEXT NOT NULL,
+    strategy_details TEXT NOT NULL,
+    is_actif BOOLEAN NOT NULL DEFAULT 1,
+    create_date  TEXT NOT NULL DEFAULT (datetime('now')),
+    update_date  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Script de création de table pour exemple SQLite
 CREATE TABLE IF NOT EXISTS scanner_results (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     strategy_id INTEGER NOT NULL,
@@ -12,17 +23,8 @@ CREATE TABLE IF NOT EXISTS scanner_results (
     exchange TEXT,
     -- chiffres en lien avec le scanner => valeurs en lien avec le ranking du scanner
     create_date  TEXT NOT NULL DEFAULT (datetime('now')),
-    update_date  TEXT NOT NULL DEFAULT (datetime('now'))
+    update_date  TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (strategy_id) REFERENCES strategies(strategy_id)
-);
-
-CREATE TABLE IF NOT EXISTS strategies (
-    strategy_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    strategy_name TEXT NOT NULL,
-    strategy_details TEXT NOT NULL,
-    is_actif BOOLEAN NOT NULL DEFAULT 1,
-    create_date  TEXT NOT NULL DEFAULT (datetime('now')),
-    update_date  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 -- Table des ordres passés par les stratégies

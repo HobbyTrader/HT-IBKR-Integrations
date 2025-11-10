@@ -3,7 +3,6 @@ import json
 import logging
 from importlib.resources import files
 
-from app import load_config
 from app.utils.logger import LoggerManager
 from app.utils.sqllitemanager import SQLiteManager
 
