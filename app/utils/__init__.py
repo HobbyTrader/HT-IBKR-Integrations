@@ -2,10 +2,6 @@ import json
 
 from importlib.resources import files
 
-# DEFAULT IBKR CONFIGS
-HOST = "localhost"
-PORT = 7497
-CLIENT_ID = 0
 
 _config_path = files('app').joinpath('config.json')
 

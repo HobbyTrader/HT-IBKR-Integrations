@@ -1,4 +1,4 @@
-from app import load_config
+import logging
 
 from ibapi.wrapper import EWrapper
 from ibapi.client import *
@@ -12,11 +12,6 @@ from app.utils.sqllitemanager import SQLiteManager
 
 logger = logging.getLogger(__name__)
 
-# Initialize Database
-def initDatabase(config):
-    dbconn = SQLiteManager()
-    logger.info("[MAIN] - Database initialized successfully.")
-    return dbconn
 
 def main():
     logger.debug("[MAIN] - Starting HT-IBKR-Integrations Application")
@@ -61,6 +56,5 @@ def main():
     
 
 if __name__ == "__main__":
-    config = load_config()
     
     main()
