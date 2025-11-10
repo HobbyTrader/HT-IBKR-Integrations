@@ -1,4 +1,4 @@
-from app.core import load_config
+import logging
 
 from ibapi.wrapper import EWrapper
 from ibapi.client import *
@@ -9,24 +9,15 @@ from app.services.scanner import ScannerService
 from app.utils.logger import LoggerManager
 from app.utils.sqllitemanager import SQLiteManager
 
-# Initialize Logger
-def initLogger(config):
-    LoggerManager.initialize(config)
-    logger = LoggerManager.get_logger()
-    logger.info("[MAIN] - Logging initialized successfully.")
-    return logger
 
-# Initialize Database
-def initDatabase(logger: LoggerManager, config):
-    dbconn = SQLiteManager(logger, config)
-    logger.info("[MAIN] - Database initialized successfully.")
-    return dbconn
+logger = logging.getLogger(__name__)
 
-def main(logger: LoggerManager):
+
+def main():
     logger.debug("[MAIN] - Starting HT-IBKR-Integrations Application")
 
     # Get scanner market data
-    with ScannerService(logger, config) as scanner:
+    with ScannerService() as scanner:
         scanSub = ScannerSubscription()
         scanSub.instrument = "STK"
         scanSub.locationCode = "STK.US.MAJOR"
@@ -65,9 +56,5 @@ def main(logger: LoggerManager):
     
 
 if __name__ == "__main__":
-    config = load_config()
-    # logger = initLogger(config.get("logging"))
-    logger = LoggerManager.initialize(config.get("logging"))
-    # dbconn = initDatabase(logger, config.get("database"))
     
-    main(logger)
+    main()

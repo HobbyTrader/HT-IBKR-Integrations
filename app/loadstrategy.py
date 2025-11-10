@@ -1,11 +1,14 @@
 import sys
 import json
+import logging
 from importlib.resources import files
 
-
-from app.core import load_config
+from app import load_config
 from app.utils.logger import LoggerManager
 from app.utils.sqllitemanager import SQLiteManager
+
+
+logger = logging.getLogger(__name__)
 
 def insert_strategy(cursor, strategies):
     for strategy in strategies.get("strategies", []):
@@ -19,8 +22,8 @@ def insert_strategy(cursor, strategies):
         ))
     cursor.connection.commit()
 
-def main(logger: LoggerManager, json_file_path: str):
-    dbconn = SQLiteManager(logger, config.get("database"))
+def main(json_file_path: str):
+    dbconn = SQLiteManager()
     cursor = dbconn.conn.cursor()
     
     # Load JSON data from the file
@@ -36,9 +39,7 @@ if __name__ == "__main__":
         print("Usage: python loadstrategy.py <path_to_json_file>")
         sys.exit(1)
         
-    config = load_config()
-    logger = LoggerManager.initialize(config.get("logging"))
     json_file_path = files('app.strategies').joinpath(sys.argv[1])
     # dbconn = initDatabase(logger, config.get("database"))
     
-    main(logger, json_file_path)
+    main(json_file_path)
