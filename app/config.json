@@ -9,8 +9,10 @@
     "CLIENTID": "0"
   },
   "logging": {
-    "consolelevel": "DEBUG",
+    "logpath": "LOG",
+    "logname": "HT_TOOLS.log",
     "loglevel": "INFO",
-    "logpath": "log/"
+    "consolelevel": "DEBUG",
+    "backupcount": 2
   }
 }

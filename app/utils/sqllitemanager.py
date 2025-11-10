@@ -1,12 +1,16 @@
 import sqlite3
 import os
+import logging
 
 from app.utils.logger import LoggerManager
+from app.utils import load_config_db
+
+logger = logging.getLogger(__name__)
 
 class SQLiteManager:
-    def __init__(self, logger: LoggerManager, config: dict):
+    def __init__(self):
         """Initialize the SQLiteManager with configuration."""
-        self.logger = logger
+        config = load_config_db()
         self.db_path = config.get("filename", "data/ht_ibkr_integrations.db")
         self.table_definitions_file = config.get("tabledefinitions", "app/core/sqllite_tables.sql")
 
@@ -17,13 +21,13 @@ class SQLiteManager:
     def connect(self):
         """Connect to the SQLite database (create if not exists)."""
         self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
-        self.logger.debug(f"Connected to database at {self.db_path}")
+        logger.debug(f"Connected to database at {self.db_path}")
 
     def close(self):
         """Close the database connection."""
         if self.conn:
             self.conn.close()
-            self.logger.debug("Connection closed.")
+            logger.debug("Connection closed.")
 
     def table_exists(self, table_name):
         """Check if a table exists in the database."""
@@ -33,7 +37,7 @@ class SQLiteManager:
         """, (table_name,))
         exists = cursor.fetchone()[0] == 1
         cursor.close()
-        self.logger.debug(f"Table '{table_name}' exists: {exists}")
+        logger.debug(f"Table '{table_name}' exists: {exists}")
         return exists
 
     def get_required_tables(self):
@@ -72,9 +76,9 @@ class SQLiteManager:
         try:
             cursor.executescript(sql)
             self.conn.commit()
-            print("Tables created successfully.")
+            logger.info("Tables created successfully.")
         except sqlite3.Error as e:
-            print(f"Error creating tables: {e}")
+            logger.error(f"Error creating tables: {e}")
             self.conn.rollback()
         finally:
             cursor.close()
@@ -87,10 +91,10 @@ class SQLiteManager:
         tables = self.get_required_tables()
         missing_tables = [t for t in tables if not self.table_exists(t)]
         if missing_tables:
-            self.logger.info(f"Missing tables: {missing_tables}. Creating tables...")
+            logger.info(f"Missing tables: {missing_tables}. Creating tables...")
             self.create_tables()
         else:
-            self.logger.debug("All required tables are present.")
+            logger.debug("All required tables are present.")
 
     def get_connection(self):
         """Get the current database connection."""
