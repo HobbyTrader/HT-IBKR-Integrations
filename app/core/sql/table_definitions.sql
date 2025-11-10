@@ -1,7 +1,7 @@
 -- Script de création de table pour exemple SQLite
 CREATE TABLE IF NOT EXISTS scanner_results (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    -- strategy_id INTEGER NOT NULL,
+    strategy_id INTEGER NOT NULL,
     req_id INTEGER NOT NULL, 
     rank INTEGER NOT NULL, 
     contract_id INTEGER NOT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS scanner_results (
     -- chiffres en lien avec le scanner => valeurs en lien avec le ranking du scanner
     create_date  TEXT NOT NULL DEFAULT (datetime('now')),
     update_date  TEXT NOT NULL DEFAULT (datetime('now'))
-    -- FOREIGN KEY (strategy_id) REFERENCES strategies(strategy_id)
+    FOREIGN KEY (strategy_id) REFERENCES strategies(strategy_id)
 );
 
 CREATE TABLE IF NOT EXISTS strategies (
@@ -45,9 +45,3 @@ CREATE TABLE IF NOT EXISTS orders (
     FOREIGN KEY (strategy_id) REFERENCES strategies(strategy_id)
 );
 
--- Tables à creer pour l'application HT-IBKR-Integrations   
--- MARKET SCANNER DATA  
--- scannerData. reqId: 7, rank: 0, contractDetails: ConId: 505405587, Symbol: RANI, SecType: STK, LastTradeDateOrContractMonth: , Strike: 0, Right: , Multiplier: , Exchange: SMART, PrimaryExchange: , Currency: USD, LocalSymbol: RANI, TradingClass: NMS, IncludeExpired: False, SecIdType: , SecId: , Description: , IssuerId: Combo:,NMS,0,,,0,0,,,,,,,,,,0,,,,0,None,,,,,,,,False,False,0,False,,,,,False,,,,,None, distance: , benchmark: , projection: , legsStr: .
--- ORDRES 
--- STRATEGIES ? => dans le fichier de configuration. Mais si on veut faire un lien entre les données du scanner et les résultats de ordres
---    il serait pas mal d'avoir les stratégies en DB aussi.

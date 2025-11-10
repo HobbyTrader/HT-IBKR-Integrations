@@ -23,7 +23,10 @@
                 ],
                 "maxResults": 50,
                 "minutes_to_order": 3,
-                "amount_to_invest_per_trade": 1000,
+                "max_shares_to_invest_per_trade": 1000,
+                "min_shares_to_invest_per_trade": 100,
+                "max_price_per_trade": 5000,
+                "min_price_per_trade": 1000,
                 "max_trades_per_day": 5
             }
         }
