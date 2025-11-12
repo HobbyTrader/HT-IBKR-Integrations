@@ -13,9 +13,9 @@ from ibapi.utils import iswrapper
 logger = logging.getLogger(__name__)
 
 class ScannerService(IBApiConnector):
-    def __init__(self): 
+    def __init__(self, strategy_id=None): 
         super().__init__()
-        self.scanner_dto = ScannerDTO()
+        self.scanner_dto = ScannerDTO(strategy_id)
         logger.debug("[ScannerService] - Scanner initialzed")
 
     @iswrapper
@@ -27,6 +27,7 @@ class ScannerService(IBApiConnector):
     def scannerData(self, reqId, rank, contractDetails, distance, benchmark, projection, legsStr):
         logger.debug(f"[ScannerService] - ScannerData. reqId: {reqId}, rank: {rank}, contractDetails: {contractDetails}, distance: {distance}, benchmark: {benchmark}, projection: {projection}, legsStr: {legsStr}.")
         self.scanner_dto.saveDetails(reqId, rank, contractDetails)
+       
 
     def get_parameters(self):
         self.reqScannerParameters()

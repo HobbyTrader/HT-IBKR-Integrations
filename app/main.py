@@ -6,7 +6,9 @@ from ibapi.client import *
 from ibapi.tag_value import *
 
 from app.dto.strategie_dto import StrategieDTO
+from app.dto.scanner_dto import ScannerDTO
 from app.services.scanner import ScannerService
+from app.services.market import MarketService
 from app.utils.logger import LoggerManager
 from app.utils.sqllitemanager import SQLiteManager
 
@@ -16,39 +18,30 @@ logger = logging.getLogger(__name__)
 
 def main():
     strategie_dto = StrategieDTO()
-    logger.debug("[MAIN] - Starting HT-IBKR-Integrations Application")
+    logger.info("[MAIN] - Starting HT-IBKR-Integrations Application")
     
     # Get strategies
-    
     strategies = strategie_dto.getActiveStrategies()
     for strategy in strategies:
         logger.info(f"STRATEGY - {strategy}")
 
-    # Get scanner market data
-    with ScannerService() as scanner:
-        scanner.get_scannerResult(strategy)
+        # Get scanner market data
+        with ScannerService(strategy.id) as scanner:
+            scanner.get_scannerResult(strategy)
         
-    #     scanSub = ScannerSubscription()
-    #     scanSub.instrument = "STK"
-    #     scanSub.locationCode = "STK.US.MAJOR"
-    #     scanSub.scanCode = "HIGH_OPEN_GAP" # Top % Gainers After Hours
-    #     # scanSub.scanCode = "TOP_PERC_GAIN"  # Top % Gainers
-
-    #     scan_options = []   
-
-    #     filter_options = [
-    #         TagValue("volumeAbove", "10000"),
-    #         TagValue("priceAbove", "10"),
-    #         TagValue("priceBelow", "50"),]
-
+    
+    # instrument_candidates = scanner_dto.getDetailsByReqId()
     
     # Request realtime market data in time bars
     
     # myContract = Contract()
-    # myContract.symbol = "AAPL"
+    # myContract.symbol = "LPTX"
     # myContract.secType = "STK"
     # myContract.currency = "USD"
     # myContract.exchange = "SMART"
+    
+    # with MarketService() as app:
+    #     app.get_realtime_bars(myContract)
 
     # app.reqContractDetails(app.nextId(), myContract)
 
@@ -58,10 +51,10 @@ def main():
     # app.reqMktData(app.nextId(), myContract, "225,232", False, False, [])
 
     # app.reqRealTimeBars(app.nextId(), myContract, 5, "TRADES", False, [])
-    # app.reqHistoricalData(app.nextId(), myContract, "", "1 D", "5 mins", "TRADES", 1, 1, False, [] )
+    # app.reqHistoricalData(app.nextId(), myContract, "", "1 D", "1 mins", "TRADES", 1, 1, False, [] )
 
 
-    logger.debug("HT-IBKR-Integrations Application Finished")
+    logger.info("HT-IBKR-Integrations Application Finished")
     
 
 if __name__ == "__main__":

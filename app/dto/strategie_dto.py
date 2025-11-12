@@ -26,7 +26,7 @@ class StrategieDTO:
                             (strategy.name, strategy.details.to_json()))
         self.dbconn.get_connection().commit()
     
-    def getActiveStrategies(self):
+    def getActiveStrategies(self)-> list[Strategy]:
         cursor = self.dbconn.get_cursor()
         cursor.execute("SELECT strategy_id, strategy_name, strategy_details FROM strategies where is_active = 1")
         rows = cursor.fetchall()

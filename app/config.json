@@ -12,7 +12,7 @@
     "logpath": "LOG",
     "logname": "HT_TOOLS.log",
     "loglevel": "INFO",
-    "consolelevel": "DEBUG",
+    "consolelevel": "INFO",
     "backupcount": 2
   }
 }

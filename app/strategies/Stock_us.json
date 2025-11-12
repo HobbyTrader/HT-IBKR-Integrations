@@ -14,11 +14,11 @@
                     },
                     {
                         "name": "priceAbove",
-                        "value": "10"
+                        "value": "1"
                     },
                     {
                         "name": "priceBelow",
-                        "value": "50"
+                        "value": "100"
                     }
                 ],
                 "maxResults": 50,

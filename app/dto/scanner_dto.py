@@ -6,14 +6,15 @@ from app.utils.logger import LoggerManager
 logger = logging.getLogger(__name__)
 
 class ScannerDTO:
-    def __init__(self):
-        dbconn = SQLiteManager()
+    def __init__(self, strategy_id=None):
+        self.dbconn = SQLiteManager()
+        self.strategy_id = strategy_id
     
     def saveDetails(self, reqId, rank, contractDetails):
         cursor = self.dbconn.conn.cursor()
         logger.debug(f"[ScannerDTO] - save ScannerData.")
-        cursor.execute("""INSERT INTO scanner_results (req_id, rank, contract_id, contract_symbol, contract_sectype, contract_currency, trading_class, exchange) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-                            (reqId, rank, contractDetails.contract.conId, contractDetails.contract.symbol, contractDetails.contract.secType, contractDetails.contract.currency, contractDetails.contract.tradingClass, contractDetails.contract.exchange))
+        cursor.execute("""INSERT INTO scanner_results (req_id, rank, strategy_id, contract_id, contract_symbol, contract_sectype, contract_currency, contract_trading_class, contract_exchange) VALUES (?,?, ?, ?, ?, ?, ?, ?, ?)""",
+            (reqId, rank, self.strategy_id, contractDetails.contract.conId, contractDetails.contract.symbol, contractDetails.contract.secType, contractDetails.contract.currency, contractDetails.contract.tradingClass, contractDetails.contract.exchange))
         self.dbconn.conn.commit()
     
     def getDetails(self):

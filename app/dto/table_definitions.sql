@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS scanner_results (
     contract_symbol TEXT NOT NULL, 
     contract_sectype TEXT NOT NULL,
     contract_currency TEXT NOT NULL,
-    trading_class TEXT NOT NULL,
-    exchange TEXT,
+    contract_trading_class TEXT NOT NULL,
+    contract_exchange TEXT,
     -- chiffres en lien avec le scanner => valeurs en lien avec le ranking du scanner
     create_date  TEXT NOT NULL DEFAULT (datetime('now')),
     update_date  TEXT NOT NULL DEFAULT (datetime('now')),
