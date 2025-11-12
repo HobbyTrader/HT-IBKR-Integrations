@@ -1,7 +1,7 @@
 {
   "database": {
     "filename": "app/htibkr.db",
-    "tabledefinitions": "app/core/sql/table_definitions.sql"
+    "tabledefinitions": "app/dto/table_definitions.sql"
   },
   "IBKR": {
     "HOST": "localhost",

@@ -1,4 +1,4 @@
-from app.core.config import load_config
+from app.dto.config import load_config
 
 class ContractDataService:
     def __init__(self, logger):

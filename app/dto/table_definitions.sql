@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS strategies (
     strategy_id INTEGER PRIMARY KEY AUTOINCREMENT,
     strategy_name TEXT NOT NULL,
     strategy_details TEXT NOT NULL,
-    is_actif BOOLEAN NOT NULL DEFAULT 1,
+    is_active BOOLEAN NOT NULL DEFAULT 1,
     create_date  TEXT NOT NULL DEFAULT (datetime('now')),
     update_date  TEXT NOT NULL DEFAULT (datetime('now'))
 );

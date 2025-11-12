@@ -5,6 +5,7 @@ from ibapi.client import *
 # from ibapi.ticktype import TickTypeEnum
 from ibapi.tag_value import *
 
+from app.dto.strategie_dto import StrategieDTO
 from app.services.scanner import ScannerService
 from app.utils.logger import LoggerManager
 from app.utils.sqllitemanager import SQLiteManager
@@ -14,24 +15,32 @@ logger = logging.getLogger(__name__)
 
 
 def main():
+    strategie_dto = StrategieDTO()
     logger.debug("[MAIN] - Starting HT-IBKR-Integrations Application")
+    
+    # Get strategies
+    
+    strategies = strategie_dto.getActiveStrategies()
+    for strategy in strategies:
+        logger.info(f"STRATEGY - {strategy}")
 
     # Get scanner market data
     with ScannerService() as scanner:
-        scanSub = ScannerSubscription()
-        scanSub.instrument = "STK"
-        scanSub.locationCode = "STK.US.MAJOR"
-        scanSub.scanCode = "HIGH_OPEN_GAP" # Top % Gainers After Hours
-        # scanSub.scanCode = "TOP_PERC_GAIN"  # Top % Gainers
+        scanner.get_scannerResult(strategy)
+        
+    #     scanSub = ScannerSubscription()
+    #     scanSub.instrument = "STK"
+    #     scanSub.locationCode = "STK.US.MAJOR"
+    #     scanSub.scanCode = "HIGH_OPEN_GAP" # Top % Gainers After Hours
+    #     # scanSub.scanCode = "TOP_PERC_GAIN"  # Top % Gainers
 
-        scan_options = []   
+    #     scan_options = []   
 
-        filter_options = [
-            TagValue("volumeAbove", "10000"),
-            TagValue("priceAbove", "10"),
-            TagValue("priceBelow", "50"),]
+    #     filter_options = [
+    #         TagValue("volumeAbove", "10000"),
+    #         TagValue("priceAbove", "10"),
+    #         TagValue("priceBelow", "50"),]
 
-        scanner.get_scannerResult(scanSub, scan_options, filter_options)
     
     # Request realtime market data in time bars
     

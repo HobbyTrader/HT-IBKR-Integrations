@@ -11,8 +11,8 @@ class SQLiteManager:
     def __init__(self):
         """Initialize the SQLiteManager with configuration."""
         config = load_config_db()
-        self.db_path = config.get("filename", "data/ht_ibkr_integrations.db")
-        self.table_definitions_file = config.get("tabledefinitions", "app/core/sqllite_tables.sql")
+        self.db_path = config.get("filename")
+        self.table_definitions_file = config.get("tabledefinitions")
 
         self.connect()
         self.verify_and_create_tables()
