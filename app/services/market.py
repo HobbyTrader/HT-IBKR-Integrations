@@ -2,8 +2,7 @@ import time
 import logging
 
 from app.utils.ibapiconnector import IBApiConnector
-from app.utils.logger import LoggerManager
-
+from app.data.instrument import Instrument
 # from app.dto.market_dto import marketDTO
 
 from ibapi.client import *
@@ -12,9 +11,10 @@ from ibapi.utils import iswrapper
 logger = logging.getLogger(__name__)
 
 class MarketService(IBApiConnector):
-    def __init__(self): 
+    def __init__(self, instrument: Instrument): 
         super().__init__()
         # self.market_dto = marketDTO()
+        self.instrument = instrument
         logger.debug("[MarketService] - Market initialzed")
         
     @iswrapper  
@@ -25,15 +25,20 @@ class MarketService(IBApiConnector):
     @iswrapper
     def historicalData(self, reqId: int, bar):
         logger.debug(f"[MarketService] - HistoricalData. reqId: {reqId}, bar: {bar}.")
-        firstvalue
+        self.instrument.daily_history.append(bar)
         # self.market_dto.saveHistoricalData(reqId, bar)
         
-    def get_realtime_bars(self, contract):
+    def get_realtime_bars(self, contract: Contract):
         logger.debug("[MarketService] - Realtime Bars requested")
         self.reqHistoricalData(self.nextId(), contract,"", "1 D", "30 secs", "TRADES",1,1, False, [])
         time.sleep(10)
         
-    def get_historical_day_data(self, contract):
+    def get_historical_day_data(self):
         logger.debug("[MarketService] - Historical Data requested")
-        self.reqHistoricalData(self.nextId(), contract,"", "1 D", "30 secs", "TRADES",1,1, False, [])
-        time.sleep(10)
+        contract = Contract()
+        contract.symbol = self.instrument.symbol
+        contract.secType = self.instrument.sectype
+        contract.currency = self.instrument.currency
+        contract.exchange = self.instrument.exchange
+        self.reqHistoricalData(self.orderId, contract,"", "1 D", "30 secs", "TRADES",0,1, False, [])
+        time.sleep(2)

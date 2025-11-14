@@ -1,10 +1,10 @@
 {
     "strategies": [
         {
-            "name": "US Stock High Open Gap Scan",
+            "name": "EU-DE Stock High Open Gap Scan",
             "details": {
-                "instrument": "STK",
-                "locationCode": "STK.US.MAJOR",
+                "instrument": "STOCK.EU",
+                "locationCode": "STK.EU.IBIS",
                 "scanCode": "HIGH_OPEN_GAP",
                 "scan_options": [],
                 "filter_options": [

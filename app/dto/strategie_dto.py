@@ -45,6 +45,15 @@ class StrategieDTO:
         row = cursor.fetchall()
         return self.row_to_strategy(row) if row else None
     
+    def get_strategyById(self, strategy_id) -> Strategy:
+        cursor = self.dbconn.get_cursor()
+        cursor.execute("SELECT * FROM strategies WHERE strategy_id = ?", (strategy_id,))
+        row = cursor.fetchone()
+        if row:
+            return self.row_to_strategy(row)
+        else:
+            return None
+    
     def deactivateStrategy(self, strategy_id):
         cursor = self.dbconn.get_cursor()
         logger.debug(f"[StrategieDTO] - Deactivating Strategy ID: {strategy_id}.")
