@@ -31,7 +31,7 @@ def load_config_db() -> json:
         with open(_config_path) as file:
             return json.load(file).get("database", {
             "filename": "app/htibkr.db",
-            "tabledefinitions": "app/core/sql/table_definitions.sql"
+            "tabledefinitions": "app/dto/table_definitions.sql"
         })
     except Exception as e:
         # Fallback config.json if non existing filr in project root
