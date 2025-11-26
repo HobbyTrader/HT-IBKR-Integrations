@@ -2,6 +2,7 @@ import json
 import logging
 
 from ibapi.common import BarData
+from ibapi.contract import Contract
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,14 @@ class Instrument:
     
     def to_json(self) -> str:
         return json.dumps(self.__dict__)
+    
+    def to_contract(self) -> Contract:
+        contract = Contract()
+        contract.symbol = self.symbol
+        contract.secType = self.sectype
+        contract.currency = self.currency
+        contract.exchange = self.exchange
+        return contract
     
     @classmethod
     def from_json(cls, json_str_or_dict):

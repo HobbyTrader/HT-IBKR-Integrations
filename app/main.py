@@ -47,7 +47,7 @@ def main():
                 market_serv.get_historical_day_data()
                 logger.debug(f"DAILY HISTORY for {instrument.symbol} - {instrument.daily_history}")
                 is_candidate = instrument.is_order_candidate()
-                scanner_dto.set_orderCandidate(exec_key, instrument.id, is_candidate)
+                scanner_dto.set_order_candidate(exec_key, instrument.id, is_candidate)
                 # Stop if reached max candidates defined in strategy - MAX_TRADES_PER_DAY
                 if(is_candidate):
                     candidate_count -= 1
@@ -55,7 +55,7 @@ def main():
                     break
                 
         # Generate orders for candidates
-        # instrument_candidates = scanner_dto.get_instrument_candidates(exec_key)
+        instrument_candidates = scanner_dto.get_instrument_candidates(exec_key)
         # for instrument in instrument_candidates:
         #     logger.info(f"INSTRUMENT CANDIDATE - {instrument}")
             

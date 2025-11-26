@@ -2,6 +2,7 @@ import json
 from dataclasses import dataclass, asdict
 from ibapi.scanner import ScannerSubscription
 from ibapi.tag_value import TagValue
+from ibapi.order import Order
 
 @dataclass
 class FilterOption:
@@ -25,11 +26,12 @@ class StrategyDetail:
     max_price_per_trade: int
     min_price_per_trade: int
     max_trades_per_day: int
+    stop_loss_percent: float
+    take_profit_percent: float
     
     def to_json(self) -> str:
         return json.dumps(asdict(self))
     
-    @classmethod
     def from_json(cls, json_str_or_dict):
         if isinstance(json_str_or_dict, str):
             data = json.loads(json_str_or_dict)
@@ -64,8 +66,23 @@ class Strategy:
     
     def to_json(self) -> str:
         return json.dumps(asdict(self))
+    
+    # def to_buy_order(self) -> Order:
+    #     # Placeholder for order creation logic based on strategy details
+    #     order = Order()
+    #     order.action = "BUY"
+    #     order.totalQuantity = self.details.min_shares_to_invest_per_trade
+    #     order.orderType = "MKT"
+    #     return order
+    
+    # def to_sell_order(self) -> Order:
+    #     # Placeholder for order creation logic based on strategy details
+    #     order = Order()
+    #     order.action = "SELL"
+    #     order.totalQuantity = self.details.min_shares_to_invest_per_trade
+    #     order.orderType = "MKT"
+    #     return order
 
-    @classmethod
     def from_json(cls, json_str_or_dict):
         if isinstance(json_str_or_dict, str):
             data = json.loads(json_str_or_dict)
@@ -73,3 +90,12 @@ class Strategy:
             data = json_str_or_dict  # Already a dict
         details = StrategyDetail.from_json(data['details'])
         return cls(name=data['name'], details=details)
+    
+    
+    def get_stop_loss_price(self, buy_price: float) -> float:
+        # Placeholder logic for calculating stop loss price
+        return buy_price * self.details.stop_loss_percent  # e.g., 5% below buy price
+    
+    def get_take_profit_price(self, buy_price: float) -> float:
+        # Placeholder logic for calculating take profit price
+        return buy_price * self.details.take_profit_percent  # e.g., 10% above buy price
