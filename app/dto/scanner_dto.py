@@ -41,6 +41,13 @@ class ScannerDTO:
             """UPDATE scanner_results SET is_order_candidate = ?, update_date = CURRENT_TIMESTAMP WHERE exec_key = ? AND contract_id = ?""",
             (is_order_candidate, exec_key, contract_id))
         self.dbconn.conn.commit()
+        
+    # def set_order_market_price(self, exec_key, contract_id, market_price:float):
+    #     cursor = self.dbconn.conn.cursor()
+    #     cursor.execute(
+    #         """UPDATE scanner_results SET market_price = ?, update_date = CURRENT_TIMESTAMP WHERE exec_key = ? AND contract_id = ?""",
+    #         (market_price, exec_key, contract_id))
+    #     self.dbconn.conn.commit()
     
     def get_details(self):
         cursor = self.dbconn.conn.cursor()

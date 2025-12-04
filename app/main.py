@@ -51,19 +51,18 @@ def main():
                 # Stop if reached max candidates defined in strategy - MAX_TRADES_PER_DAY
                 if(is_candidate):
                     candidate_count -= 1
-                if(candidate_count <= 0):
-                    break
+                    # scanner_dto.set_order_market_price(exec_key, instrument.id, instrument.get_market_price())
+                    if(candidate_count <= 0):
+                        break
                 
         # Generate orders for candidates
         instrument_candidates = scanner_dto.get_instrument_candidates(exec_key)
-        # for instrument in instrument_candidates:
-        #     logger.info(f"INSTRUMENT CANDIDATE - {instrument}")
+        for instrument in instrument_candidates:
+            logger.info(f"INSTRUMENT CANDIDATE - {instrument}")
             
-        #     # Get market data for order candidates
-        #     with OrderService(strategy.id) as order_serv:
-        #         order_serv.buy_order(instrument)
-        #         order_serv.create_stoploss(instrument)
-        #         order_serv.create_takeprofit(instrument)
+            # Get market data for order candidates
+            with OrderService(strategy.id) as order_serv:
+                order_serv.PlaceBracketOrder(order_serv.nextId(), instrument, strategy)
 
 
     logger.info("HT-IBKR-Integrations Application Finished")

@@ -52,6 +52,7 @@ class OrderService(IBApiConnector):
         strategy: Strategy) -> list[Order]:
         
         quantity = strategy.details.max_shares_to_invest_per_trade
+        market_price = instrument.get_market_price()
 
         #This will be our main or “parent” order
         parent = Order()
@@ -72,7 +73,7 @@ class OrderService(IBApiConnector):
         # Sell 100% at take profit limit price
         takeProfit.totalQuantity = quantity
         # Based on the buy price and the strategy
-        takeProfit.lmtPrice = strategy.get_take_profit_price(buy_price)  # Placeholder for buy price
+        takeProfit.lmtPrice = strategy.get_take_profit_price(market_price)  # Placeholder for buy price
         takeProfit.parentId = parentOrderId
         takeProfit.transmit = False
 
@@ -82,7 +83,7 @@ class OrderService(IBApiConnector):
         stopLoss.orderType = "STP"
         #Stop trigger price
         # Based on the market price and the strategy
-        stopLoss.auxPrice = strategy.get_stop_loss_price(buy_price)  # Placeholder for buy price
+        stopLoss.auxPrice = strategy.get_stop_loss_price(market_price)  # Placeholder for buy price
         stopLoss.totalQuantity = quantity
         stopLoss.parentId = parentOrderId
         #In this case, the low side order will be the last child being sent. Therefore, it needs to set this attribute to True

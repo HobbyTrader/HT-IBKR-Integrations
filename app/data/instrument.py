@@ -71,3 +71,10 @@ class Instrument:
         else:
             return False
         
+    def get_market_price(self) -> float:
+        if not self.daily_history or len(self.daily_history) == 0:
+            logger.warning(f"[Instrument] - No daily history data for {self.symbol} to get market price.")
+            return 0.0
+        # Return the closing price of the most recent bar as the market price
+        return self.daily_history[-1].close
+        

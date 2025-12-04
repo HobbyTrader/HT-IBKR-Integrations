@@ -23,7 +23,6 @@ CREATE TABLE IF NOT EXISTS scanner_results (
     contract_trading_class TEXT NOT NULL,
     contract_exchange TEXT,
     is_order_candidate BOOLEAN NOT NULL DEFAULT 0,
-    market_price REAL,
     create_date  TEXT NOT NULL DEFAULT (datetime('now')),
     update_date  TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (strategy_id) REFERENCES strategies(strategy_id)
