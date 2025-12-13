@@ -1,5 +1,7 @@
 import logging
 
+from typing import List
+
 from app.data.instrument import Instrument
 from app.utils.sqllitemanager import SQLiteManager
 
@@ -10,16 +12,11 @@ class ScannerDTO:
         self.dbconn = SQLiteManager()
         self.strategy_id = strategy_id
         
-    def rows_to_instruments(self, rows) -> list[Instrument]:
-        instruments: list[Instrument] = []
+    def rows_to_instruments(self, rows) -> List[Instrument]:
+        instruments: List[Instrument] = []
         for r in rows:
-            inst = Instrument()
             try:
-                inst.id = r[0]
-                inst.symbol = r[1]
-                inst.sectype = r[2]
-                inst.currency = r[3]
-                inst.exchange = r[4]
+                inst = Instrument.from_row(r)
             except Exception:
                 # In case schema changes, skip malformed rows
                 logger.error(f"[ScannerDTO] - Malformed row in rows_to_instruments: {r}")
@@ -55,21 +52,21 @@ class ScannerDTO:
         results = cursor.fetchall()
         return results
     
-    def get_instrumentByExecKey(self, exec_key:str) -> list[Instrument]:
+    def get_instrumentsByExecKey(self, exec_key:str) -> List[Instrument]:
         cursor = self.dbconn.conn.cursor()
         # select specific columns to map into Instrument
         cursor.execute(
-            "SELECT contract_id, contract_symbol, contract_sectype, contract_currency, contract_exchange FROM scanner_results WHERE exec_key = ? ORDER BY rank ASC",
-            (exec_key)
+            """SELECT contract_id, contract_symbol, contract_sectype, contract_currency, contract_exchange FROM scanner_results WHERE exec_key = ? ORDER BY rank ASC""",
+            (exec_key,)
         )
         rows = cursor.fetchall()
         return self.rows_to_instruments(rows)
     
-    def get_instrument_candidates(self, exec_key:str) -> list[Instrument]:
+    def get_instruments_candidates(self, exec_key:str) -> List[Instrument]:
         cursor = self.dbconn.conn.cursor()
         cursor.execute(
             "SELECT contract_id, contract_symbol, contract_sectype, contract_currency, contract_exchange FROM scanner_results WHERE is_order_candidate = 1 and exec_key = ? ORDER BY rank ASC", 
-            (exec_key)
+            (exec_key,)
         )
         rows = cursor.fetchall()
         return self.rows_to_instruments(rows)

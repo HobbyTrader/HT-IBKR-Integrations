@@ -8,7 +8,7 @@ from app.utils.ibapiconnector import IBApiConnector
 from app.utils.logger import LoggerManager
 
 from ibapi.utils import iswrapper
-from ibapi.order import Order, OrderType, Action    
+from ibapi.order import Order   
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +17,14 @@ class OrderService(IBApiConnector):
         super().__init__()
         logger.debug("[OrderService] - Order initialzed")
     
+    @iswrapper  
+    def nextValidId(self, orderId: int):
+        self.orderId = orderId
+        logger.debug(f"[OrderService] - Next Valid Id: {orderId}.")
+    
     @iswrapper 
     def openOrder(self, orderId, contract, order, orderState):
+        # TODO: Add order in database for watcher
         return super().openOrder(orderId, contract, order, orderState)
     
     @iswrapper
@@ -28,31 +34,14 @@ class OrderService(IBApiConnector):
                                   permId, parentId, lastFillPrice, clientId,
                                   whyHeld, mktCapPrice)
         
-    # def buy_order(self, instrument: Instrument, strategy: Strategy):
-    #     logger.info(f"[OrderService] - Placing buy order for {instrument}")
-    #     # Implementation of buy order logic goes here
-    #     self.placeOrder(self.nextId(),instrument.to_contract(),strategy.to_order())
-    
-    # def create_stoploss(self, order_candidate):
-    #     logger.info(f"[OrderService] - Creating stoploss for {order_candidate}")
-    #     # Implementation of stoploss logic goes here
-    #     self.placeOrder(self.nextId(),CONTRACT,)
-    #     pass    
-    
-    # def create_takeprofit(self, order_candidate):
-    #     logger.info(f"[OrderService] - Creating takeprofit for {order_candidate}")
-    #     # Implementation of takeprofit logic goes here
-    #     self.placeOrder(self.nextId(),CONTRACT,ORDER)
-    #     pass
-    
+       
     # Create Braket Order
     def PlaceBracketOrder(self,
-        parentOrderId:int, 
-        instrument: Instrument,
-        strategy: Strategy) -> list[Order]:
+        instrument: Instrument):
         
-        quantity = strategy.details.max_shares_to_invest_per_trade
-        market_price = instrument.get_market_price()
+        parentOrderId = self.nextId()
+        # Define quantity based on strategy and on volume exchanged
+        quantity = instrument.volume_buy
 
         #This will be our main or “parent” order
         parent = Order()
@@ -67,23 +56,23 @@ class OrderService(IBApiConnector):
         parent.transmit = False
 
         takeProfit = Order()
-        takeProfit.orderId = parent.orderId + 1
+        takeProfit.orderId = self.nextId()
         takeProfit.action = "SELL"
         takeProfit.orderType = "LMT"
         # Sell 100% at take profit limit price
         takeProfit.totalQuantity = quantity
         # Based on the buy price and the strategy
-        takeProfit.lmtPrice = strategy.get_take_profit_price(market_price)  # Placeholder for buy price
+        takeProfit.lmtPrice = instrument.take_profit_price  # Placeholder for buy price
         takeProfit.parentId = parentOrderId
         takeProfit.transmit = False
 
         stopLoss = Order()
-        stopLoss.orderId = parent.orderId + 2
+        stopLoss.orderId = self.nextId()
         stopLoss.action = "SELL"
         stopLoss.orderType = "STP"
         #Stop trigger price
         # Based on the market price and the strategy
-        stopLoss.auxPrice = strategy.get_stop_loss_price(market_price)  # Placeholder for buy price
+        stopLoss.auxPrice = instrument.stop_loss_price  # Placeholder for buy price
         stopLoss.totalQuantity = quantity
         stopLoss.parentId = parentOrderId
         #In this case, the low side order will be the last child being sent. Therefore, it needs to set this attribute to True

@@ -16,6 +16,7 @@ class StrategieDTO:
         id = row[0]
         name = row[1]
         details_json = row[2]
+        logger.debug(f"[StrategieDTO] - Strategy details JSON: {details_json}")
         details_obj = StrategyDetail.from_json(details_json)
         return Strategy(id=id, name=name, details=details_obj)
     

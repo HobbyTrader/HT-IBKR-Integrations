@@ -1,5 +1,6 @@
 import time
 import logging
+import threading
 
 from app.utils.ibapiconnector import IBApiConnector
 from app.data.instrument import Instrument
@@ -15,6 +16,7 @@ class MarketService(IBApiConnector):
         super().__init__()
         # self.market_dto = marketDTO()
         self.instrument = instrument
+        self.Historical_events = {}
         logger.debug("[MarketService] - Market initialzed")
         
     @iswrapper  
@@ -28,6 +30,13 @@ class MarketService(IBApiConnector):
         self.instrument.daily_history.append(bar)
         # self.market_dto.saveHistoricalData(reqId, bar)
         
+    @iswrapper
+    def historicalDataEnd(self, reqId: int, start: str, end: str):
+        event = self.Historical_events.get(self.instrument.symbol)
+        if event:
+            event.set()
+        logger.debug(f"[MarketService] - HistoricalDataEnd. reqId: {reqId}, start: {start}, end: {end}.")
+        
     def get_realtime_bars(self, contract: Contract):
         logger.debug("[MarketService] - Realtime Bars requested")
         self.reqHistoricalData(self.nextId(), contract,"", "1 D", "30 secs", "TRADES",1,1, False, [])
@@ -35,10 +44,14 @@ class MarketService(IBApiConnector):
         
     def get_historical_day_data(self):
         logger.debug("[MarketService] - Historical Data requested")
+        evt = threading.Event()
+        self.Historical_events[self.instrument.symbol] = evt
         contract = Contract()
         contract.symbol = self.instrument.symbol
         contract.secType = self.instrument.sectype
         contract.currency = self.instrument.currency
         contract.exchange = self.instrument.exchange
-        self.reqHistoricalData(self.orderId, contract,"", "1 D", "30 secs", "TRADES",0,1, False, [])
-        time.sleep(2)
+        self.reqHistoricalData(self.orderId, contract,"", "3 D", "30 mins", "TRADES",0,1, False, [])
+        
+        evt.wait(timeout=15)
+        self.Historical_events.pop(self.instrument.symbol, None)

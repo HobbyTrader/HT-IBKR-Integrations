@@ -40,7 +40,10 @@
                             "opening_hours",
                             "open_days",
                             "min_open_trade_gap_percentage",
-                            "max_open_trade_gap_percentage"
+                            "max_open_trade_gap_percentage",
+                            "stop_loss_percent",
+                            "take_profit_percent",
+                            "max_volume_percentage"
                         ],
                         "properties": {
                             "instrument": {
@@ -151,15 +154,21 @@
                             },
                             "stop_loss_percent": {
                                 "type": "number",
-                                "description": "Stop loss percentage (e.g., 0.95 for 5% loss)",
+                                "description": "Stop loss percentage (e.g., 95.0 for 5% loss)",
                                 "minimum": 0,
-                                "maximum": 1
+                                "maximum": 100
                             },
                             "take_profit_percent": {
                                 "type": "number",
-                                "description": "Take profit percentage (e.g., 1.10 for 10% gain)",
-                                "minimum": 1,
-                                "maximum": 3
+                                "description": "Take profit percentage (e.g., 110.00 for 10% gain)",
+                                "minimum": 100,
+                                "maximum": 300
+                            },
+                            "max_volume_percent": {
+                                "type": "number",
+                                "description": "Maximum volume percentage compared to avg exchanged volume at that time(e.g., 1.0 for 1%)",
+                                "minimum": 0,
+                                "maximum": 100
                             }
                         }
                     }

@@ -32,8 +32,9 @@
                 "open_days": ["MON", "TUE", "WED", "THU", "FRI"],
                 "min_open_trade_gap_percentage": 2.0,
                 "max_open_trade_gap_percentage": 10.0,
-                "stop_loss_percent": 0.95,
-                "take_profit_percent": 1.10
+                "max_volume_percent": 1.0,
+                "stop_loss_percent": 95.0,
+                "take_profit_percent": 110.0
             }
         }
     ]
