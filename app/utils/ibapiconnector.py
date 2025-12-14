@@ -4,7 +4,6 @@ import time
 from ibapi.wrapper import EWrapper
 from ibapi.client import *
 
-from app.utils.logger import LoggerManager
 from app.utils import load_config_ibapi
 
 logger = logging.getLogger(__name__)
@@ -26,14 +25,19 @@ class IBApiConnector(EClient, EWrapper):
        # ------------------------------------------------------
     # Connection management
     # -----------------------------------------------------
-    def open_connection(self):
+    def open_connection(self, clientId = None):
         """Connect to TWS or IB Gateway and start the API loop."""
         if self.isConnected():
             logger.warning("IBKR already connected.")
             return
 
+        # Use parameter if provided, else fallback to instance attribute
+        effective_client_id = clientId if clientId is not None else self.CLIENT_ID
+        
         try:
-            self.connect(self.HOST, self.PORT, self.CLIENT_ID)
+            self.connect(self.HOST, self.PORT, effective_client_id)
+            
+            self.CLIENT_ID = effective_client_id
 
             self.connection_thread = threading.Thread(target=self.run, daemon=True)
             self.connection_thread.start()

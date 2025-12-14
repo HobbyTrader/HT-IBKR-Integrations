@@ -3,6 +3,7 @@ import string
 import secrets
 
 from typing import List
+from concurrent.futures import ThreadPoolExecutor, wait
 
 from app.data.instrument import Instrument
 from app.data.strategy import Strategy
@@ -13,11 +14,18 @@ from app.services.scanner import ScannerService
 from app.services.market import MarketService
 from app.services.order import OrderService
 
+# from app.utils.ordercoordinator import OrderCoordinator
+
 logger = logging.getLogger(__name__)
 
 def generate_key(length=10) -> str:
     chars = string.ascii_uppercase + string.digits
     return ''.join(secrets.choice(chars) for _ in range(length))
+
+# def fire_generate_orders(instrument, clientId=None):
+#     order_service = OrderService(clientId) if clientId is not None else OrderService()
+#     with order_service as order_serv:
+#         order_serv.PlaceBracketOrder(instrument)
 
 def main():
     strategie_dto = StrategieDTO()
@@ -29,6 +37,8 @@ def main():
     strategies.append(strategie_dto.get_strategyById(1))
     
     for strategy in strategies:
+        # coordinator = OrderCoordinator() 
+        
         logger.info(f"STRATEGY - {strategy}")
         exec_key = generate_key()
         logger.info(f"EXEC KEY - {exec_key}")
@@ -69,6 +79,15 @@ def main():
             # Get market data for order candidates
             with OrderService() as order_serv:
                 order_serv.PlaceBracketOrder(instrument)
+            
+            
+        # with ThreadPoolExecutor(max_workers=4) as executor:
+        #     futures = [
+        #         executor.submit(fire_generate_orders, instrument, clientId = coordinator.get_next_clientId()) 
+        #         for instrument in instrument_candidates]
+        #     wait(futures)
+            
+        # coordinator.wait_all_orders()
 
 
     logger.info("HT-IBKR-Integrations Application Finished")

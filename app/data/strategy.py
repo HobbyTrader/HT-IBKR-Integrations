@@ -98,11 +98,12 @@ class Strategy:
         # Placeholder logic for calculating take profit price
         return float(buy_price) * float(self.details.take_profit_percent) / 100.0 # e.g., 10% above buy price
     
-    def get_volume_buy(self, avg_volume: float) -> int:
+    def get_volume_buy(self, avg_volume: float, price: float) -> int:
         # Calculate volume to buy based on average volume and strategy limits
-        max_investment = self.details.max_shares_to_invest_per_trade * avg_volume
-        quantity = min(int(max_investment / avg_volume), int(float(avg_volume) * float(self.details.max_volume_percent) / 100.0))
-        logger.debug(f"[Strategy] - Calculated quantity to invest: {quantity} shares based on max investment of {max_investment}.")
+        quantity = min(self.details.max_shares_to_invest_per_trade, 
+                       int(float(avg_volume) * float(self.details.max_volume_percent) / 100.0),
+                       int(float(self.details.max_price_per_trade) / float(price)))
+        logger.info(f"[Strategy] - Calculated quantity to invest: {quantity} shares based on max investment of {avg_volume} and market price {price}.")
         return quantity
     
     def apply_strategy_on_instrument(self, instrument: Instrument):
@@ -122,7 +123,7 @@ class Strategy:
             instrument.set_stop_loss_price(self.get_stop_loss_price(instrument.market_price))
             instrument.set_take_profit_price(self.get_take_profit_price(instrument.market_price))
             instrument.calculate_avg_volume(item_num)
-            instrument.set_volume_buy(self.get_volume_buy(instrument.avg_volume))
+            instrument.set_volume_buy(self.get_volume_buy(instrument.avg_volume, instrument.market_price))
             instrument.is_candidate = True
         else:
             instrument.is_candidate = False

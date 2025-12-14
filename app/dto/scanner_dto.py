@@ -26,7 +26,7 @@ class ScannerDTO:
     
     def save_details(self, reqId, rank, contractDetails, exec_key:str="AAA"):
         cursor = self.dbconn.conn.cursor()
-        logger.debug(f"[ScannerDTO] - save ScannerData.")
+        logger.debug(f"[ScannerDTO] - save ScannerData. ContractDetails: {contractDetails}")
         cursor.execute(
             """INSERT INTO scanner_results (req_id, rank, strategy_id, contract_id, contract_symbol, contract_sectype, contract_currency, contract_trading_class, contract_exchange,exec_key) VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (reqId, rank, self.strategy_id, contractDetails.contract.conId, contractDetails.contract.symbol, contractDetails.contract.secType, contractDetails.contract.currency, contractDetails.contract.tradingClass, contractDetails.contract.exchange, exec_key))

@@ -1,11 +1,11 @@
 import time
 import logging
+import threading
 
 from app.data.instrument import Instrument
 from app.data.strategy import Strategy
 
 from app.utils.ibapiconnector import IBApiConnector
-from app.utils.logger import LoggerManager
 
 from ibapi.utils import iswrapper
 from ibapi.order import Order   
@@ -13,35 +13,46 @@ from ibapi.order import Order
 logger = logging.getLogger(__name__)
 
 class OrderService(IBApiConnector):
-    def __init__(self): 
+    def __init__(self, clientId : int=0): 
         super().__init__()
-        logger.debug("[OrderService] - Order initialzed")
+        self.order_events = {}
+        self.CLIENT_ID = clientId
+        logger.info(f"[OrderService] - Order initialzed - Client ID: {clientId}")
     
     @iswrapper  
     def nextValidId(self, orderId: int):
+        super().nextValidId(orderId)
         self.orderId = orderId
         logger.debug(f"[OrderService] - Next Valid Id: {orderId}.")
     
     @iswrapper 
     def openOrder(self, orderId, contract, order, orderState):
+        logger.debug(f"[OrderService] - Open Order. orderId: {orderId}, contract: {contract}, order: {order}, orderState: {orderState}.")
         # TODO: Add order in database for watcher
         return super().openOrder(orderId, contract, order, orderState)
     
     @iswrapper
     def orderStatus(self, orderId, status, filled, remaining, avgFillPrice, permId,
                     parentId, lastFillPrice, clientId, whyHeld, mktCapPrice):
-        return super().orderStatus(orderId, status, filled, remaining, avgFillPrice,
+        logger.debug(f"[OrderService] - Order Status. orderId: {orderId}, status: {status}, filled: {filled}, remaining: {remaining}, avgFillPrice: {avgFillPrice}, permId: {permId}, parentId: {parentId}, lastFillPrice: {lastFillPrice}, clientId: {clientId}, whyHeld: {whyHeld}, mktCapPrice: {mktCapPrice}.")
+        super().orderStatus(orderId, status, filled, remaining, avgFillPrice,
                                   permId, parentId, lastFillPrice, clientId,
                                   whyHeld, mktCapPrice)
+        # Mark order as confirmed (Submitted/Filled/PreSubmitted)
+        if orderId in self.order_events and status in ['Submitted', 'Filled', 'PreSubmitted']:
+            self.order_events[orderId].set()  # Signal completion
+            logger.debug(f"Order {orderId} confirmed: {status}")
         
        
     # Create Braket Order
     def PlaceBracketOrder(self,
         instrument: Instrument):
-        
-        parentOrderId = self.nextId()
+        events = []
         # Define quantity based on strategy and on volume exchanged
         quantity = instrument.volume_buy
+        
+        contract = instrument.to_contract()
+        parentOrderId = self.nextId()
 
         #This will be our main or “parent” order
         parent = Order()
@@ -54,6 +65,11 @@ class OrderService(IBApiConnector):
         #The parent and children orders will need this attribute set to False to prevent accidental executions.
         #The LAST CHILD will have it set to True,
         parent.transmit = False
+        buy_events = threading.Event()
+        self.order_events[parent.orderId] = buy_events
+        events.append(buy_events)
+        
+        self.placeOrder(parent.orderId, contract, parent)
 
         takeProfit = Order()
         takeProfit.orderId = self.nextId()
@@ -65,6 +81,12 @@ class OrderService(IBApiConnector):
         takeProfit.lmtPrice = instrument.take_profit_price  # Placeholder for buy price
         takeProfit.parentId = parentOrderId
         takeProfit.transmit = False
+        
+        target_events = threading.Event()
+        self.order_events[takeProfit.orderId] = target_events
+        events.append(target_events)
+        
+        self.placeOrder(takeProfit.orderId, contract, takeProfit)
 
         stopLoss = Order()
         stopLoss.orderId = self.nextId()
@@ -79,8 +101,28 @@ class OrderService(IBApiConnector):
         #to activate all its predecessors
         stopLoss.transmit = True
         
-        contract = instrument.to_contract()
-
-        self.placeOrder(parent.orderId, contract, parent)
-        self.placeOrder(takeProfit.orderId, contract, takeProfit)
+        stop_events = threading.Event()
+        self.order_events[stopLoss.orderId] = stop_events
+        events.append(stop_events)
+        
         self.placeOrder(stopLoss.orderId, contract, stopLoss)
+        
+        # Wait for ALL 3 orders to be confirmed (10s timeout each)
+        logger.info("Waiting for all 3 orders to be confirmed...")
+        # for i, event in enumerate(events):
+        for i, event in self.order_events.items():
+            success = event.wait(timeout=10.0)
+            if not success:
+                logger.error(f"Order {i} timeout!")
+                # self.cancelOrder(parent.orderId, parent)
+                # self.cancelOrder(takeProfit.orderId)
+                # self.cancelOrder(stopLoss.orderId)
+                time.sleep(2)
+                # raise TimeoutError("Order confirmation timeout")
+                
+        # Cleanup
+        for order_id in [parent.orderId, stopLoss.orderId, takeProfit.orderId]:
+            self.order_events.pop(order_id, None)
+
+        
+        

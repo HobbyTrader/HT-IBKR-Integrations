@@ -68,11 +68,11 @@ class Instrument:
         logger.debug(f"[Instrument] - Calculated avg volume for {self.symbol}: {self.avg_volume}")
             
     def set_stop_loss_price(self, price: float):
-        self.stop_loss_price = price
+        self.stop_loss_price = round(price, 2)
         logger.debug(f"[Instrument] - Set stop loss price for {self.symbol}: {self.stop_loss_price}")   
         
     def set_take_profit_price(self, price: float):
-        self.take_profit_price = price
+        self.take_profit_price = round(price, 2)
         logger.debug(f"[Instrument] - Set take profit price for {self.symbol}: {self.take_profit_price}")
         
     def set_volume_buy(self, volume: int):
