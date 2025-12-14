@@ -1,43 +1,45 @@
 import json
 import logging
 
+from dataclasses import dataclass, field
+from typing import List
+
 from ibapi.common import BarData
+from ibapi.contract import Contract
 
 logger = logging.getLogger(__name__)
 
-# @dataclass
-# class InstrumentHistory:
-#     date: str
-#     open: float
-#     high: float
-#     low: float
-#     close: float
-#     volume: int
-#     wap: float
-    
-#     def to_json(self) -> str:
-#         return json.dumps(self.__dict__)
-    
-#     @classmethod
-#     def from_json(cls, json_str_or_dict):
-#         if isinstance(json_str_or_dict, str):
-#             data = json.loads(json_str_or_dict)
-#         else:
-#             data = json_str_or_dict  # Already a dict
-#         return cls(**data)
-    
+@dataclass    
 class Instrument:
-    def __init__(self, id: int = None, symbol: str = None, sectype: str = None, 
-                 currency: str = None, exchange: str = None):
-        self.id = id
-        self.symbol = symbol
-        self.sectype = sectype
-        self.currency = currency
-        self.exchange = exchange
-        self.daily_history: list[BarData] = []
+    id: int
+    symbol: str
+    sectype: str
+    currency: str
+    exchange: str
+    daily_history: List[BarData] = field(default_factory=list)
+    market_price: float = 0.0
+    avg_volume: float = 0.0
+    stop_loss_price: float = 0.0
+    take_profit_price: float = 0.0
+    volume_buy: int = 0
+    is_candidate: bool = False
     
+    @classmethod
+    def from_row(cls, row: tuple):  
+        if len(row) < 5:
+            raise ValueError("Invalid row")
+        return cls(*row[:5])
+  
     def to_json(self) -> str:
         return json.dumps(self.__dict__)
+    
+    def to_contract(self) -> Contract:
+        contract = Contract()
+        contract.symbol = self.symbol
+        contract.secType = self.sectype
+        contract.currency = self.currency
+        contract.exchange = self.exchange
+        return contract
     
     @classmethod
     def from_json(cls, json_str_or_dict):
@@ -46,19 +48,33 @@ class Instrument:
         else:
             data = json_str_or_dict  # Already a dict
         return cls(**data)
-
-    def is_order_candidate(self) -> bool:
-        if not self.daily_history or len(self.daily_history) < 4:
-            logger.warning(f"[Instrument] - Not enough daily history data for {self.symbol} to determine order candidacy.")
-            return False
         
-        # If avg wap of 1st 3 minutes is higher than the opening price then we have a buying candidate
-        item_num = min(6, len(self.daily_history)-1)
-        logger.debug(f"[Instrument] - Evaluating order candidacy for {self.symbol} with {len(self.daily_history)} daily history items.")
-        waps = [bar.wap for bar in self.daily_history[1:7]]
-        logger.debug(f"[Instrument] - open value {self.daily_history[0].open}: AVG - {sum(waps)/(item_num)} : SUM {sum(waps)} : NUM {item_num}")
-        if (self.daily_history[0].open < sum(waps)/(item_num)):
-            return True
-        else:
-            return False
+    def set_market_price(self):
+        if not self.daily_history or len(self.daily_history) == 0:
+            logger.warning(f"[Instrument] - No daily history data for {self.symbol} to get market price.")
+            return
+        # Return the closing price of the most recent bar as the market price
+        self.market_price = self.daily_history[-1].close
+        logger.debug(f"[Instrument] - Set market price for {self.symbol}: {self.market_price}")
         
+    def calculate_avg_volume(self, item_num: int):
+        if not self.daily_history or len(self.daily_history) == 0:
+            logger.warning(f"[Instrument] - No daily history data for {self.symbol} to calculate average volume.")
+            return
+        # Calcul de la moyenne du volume des transactions échangées pour ne pas dépasser un certain seuil.
+        # But de ne pas trop impacter le marché avec nos ordres.
+        total_volume = sum(bar.volume for bar in self.daily_history[-item_num:])
+        self.avg_volume = total_volume / item_num
+        logger.debug(f"[Instrument] - Calculated avg volume for {self.symbol}: {self.avg_volume}")
+            
+    def set_stop_loss_price(self, price: float):
+        self.stop_loss_price = round(price, 2)
+        logger.debug(f"[Instrument] - Set stop loss price for {self.symbol}: {self.stop_loss_price}")   
+        
+    def set_take_profit_price(self, price: float):
+        self.take_profit_price = round(price, 2)
+        logger.debug(f"[Instrument] - Set take profit price for {self.symbol}: {self.take_profit_price}")
+        
+    def set_volume_buy(self, volume: int):
+        self.volume_buy = volume
+        logger.debug(f"[Instrument] - Set volume to buy for {self.symbol}: {self.volume_buy}")

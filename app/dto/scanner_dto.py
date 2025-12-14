@@ -1,5 +1,7 @@
 import logging
 
+from typing import List
+
 from app.data.instrument import Instrument
 from app.utils.sqllitemanager import SQLiteManager
 
@@ -9,19 +11,40 @@ class ScannerDTO:
     def __init__(self, strategy_id=None):
         self.dbconn = SQLiteManager()
         self.strategy_id = strategy_id
+        
+    def rows_to_instruments(self, rows) -> List[Instrument]:
+        instruments: List[Instrument] = []
+        for r in rows:
+            try:
+                inst = Instrument.from_row(r)
+            except Exception:
+                # In case schema changes, skip malformed rows
+                logger.error(f"[ScannerDTO] - Malformed row in rows_to_instruments: {r}")
+                continue
+            instruments.append(inst)
+        return instruments
     
     def save_details(self, reqId, rank, contractDetails, exec_key:str="AAA"):
         cursor = self.dbconn.conn.cursor()
-        logger.debug(f"[ScannerDTO] - save ScannerData.")
-        cursor.execute("""INSERT INTO scanner_results (req_id, rank, strategy_id, contract_id, contract_symbol, contract_sectype, contract_currency, contract_trading_class, contract_exchange,exec_key) VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        logger.debug(f"[ScannerDTO] - save ScannerData. ContractDetails: {contractDetails}")
+        cursor.execute(
+            """INSERT INTO scanner_results (req_id, rank, strategy_id, contract_id, contract_symbol, contract_sectype, contract_currency, contract_trading_class, contract_exchange,exec_key) VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (reqId, rank, self.strategy_id, contractDetails.contract.conId, contractDetails.contract.symbol, contractDetails.contract.secType, contractDetails.contract.currency, contractDetails.contract.tradingClass, contractDetails.contract.exchange, exec_key))
         self.dbconn.conn.commit()
         
-    def set_orderCandidate(self, exec_key, contract_id, is_order_candidate):
+    def set_order_candidate(self, exec_key, contract_id, is_order_candidate):
         cursor = self.dbconn.conn.cursor()
-        cursor.execute("""UPDATE scanner_results SET is_order_candidate = ?, update_date = CURRENT_TIMESTAMP WHERE exec_key = ? AND contract_id = ?""",
+        cursor.execute(
+            """UPDATE scanner_results SET is_order_candidate = ?, update_date = CURRENT_TIMESTAMP WHERE exec_key = ? AND contract_id = ?""",
             (is_order_candidate, exec_key, contract_id))
         self.dbconn.conn.commit()
+        
+    # def set_order_market_price(self, exec_key, contract_id, market_price:float):
+    #     cursor = self.dbconn.conn.cursor()
+    #     cursor.execute(
+    #         """UPDATE scanner_results SET market_price = ?, update_date = CURRENT_TIMESTAMP WHERE exec_key = ? AND contract_id = ?""",
+    #         (market_price, exec_key, contract_id))
+    #     self.dbconn.conn.commit()
     
     def get_details(self):
         cursor = self.dbconn.conn.cursor()
@@ -29,34 +52,23 @@ class ScannerDTO:
         results = cursor.fetchall()
         return results
     
-    def get_instrumentByExecKey(self, exec_key:str) -> list[Instrument]:
+    def get_instrumentsByExecKey(self, exec_key:str) -> List[Instrument]:
         cursor = self.dbconn.conn.cursor()
         # select specific columns to map into Instrument
         cursor.execute(
-            "SELECT contract_id, contract_symbol, contract_sectype, contract_currency, contract_exchange FROM scanner_results WHERE exec_key = ? ORDER BY rank ASC",
+            """SELECT contract_id, contract_symbol, contract_sectype, contract_currency, contract_exchange FROM scanner_results WHERE exec_key = ? ORDER BY rank ASC""",
             (exec_key,)
         )
         rows = cursor.fetchall()
-        instruments: list[Instrument] = []
-        for r in rows:
-            inst = Instrument()
-            try:
-                inst.id = r[0]
-                inst.symbol = r[1]
-                inst.sectype = r[2]
-                inst.currency = r[3]
-                inst.exchange = r[4]
-            except Exception:
-                # In case schema changes, skip malformed rows
-                logger.error(f"[ScannerDTO] - Malformed row in get_instrumentByExecKey: {r}")
-                continue
-            instruments.append(inst)
-        return instruments
+        return self.rows_to_instruments(rows)
     
-    def get_instrument_candidates(self, exec_key:str) -> list:
+    def get_instruments_candidates(self, exec_key:str) -> List[Instrument]:
         cursor = self.dbconn.conn.cursor()
-        cursor.execute("SELECT * FROM scanner_results WHERE is_order_candidate = 1 and exec_key = ?", (exec_key))
-        results = cursor.fetchall()
-        return results
+        cursor.execute(
+            "SELECT contract_id, contract_symbol, contract_sectype, contract_currency, contract_exchange FROM scanner_results WHERE is_order_candidate = 1 and exec_key = ? ORDER BY rank ASC", 
+            (exec_key,)
+        )
+        rows = cursor.fetchall()
+        return self.rows_to_instruments(rows)
     
     

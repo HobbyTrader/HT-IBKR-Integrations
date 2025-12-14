@@ -2,10 +2,8 @@ import time
 import logging
 
 from app.utils.ibapiconnector import IBApiConnector
-from app.services.market import MarketService
 from app.dto.scanner_dto import ScannerDTO
 from app.data.strategy import Strategy
-from app.data.instrument import Instrument
 
 from ibapi.utils import iswrapper
 
@@ -43,6 +41,6 @@ class ScannerService(IBApiConnector):
         scannerOptions = strategy.details.to_scannerOptions()
         filterTagValues = strategy.details.to_tagValueList()
         self.reqScannerSubscription(self.nextId(), scannerSubscription, scannerOptions, filterTagValues)
-        time.sleep(1)
+        time.sleep(5)
 
     
