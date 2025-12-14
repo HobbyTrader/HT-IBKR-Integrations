@@ -1,4 +1,0 @@
-ib_async
-pandas
-requests
-xmltodict

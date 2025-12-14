@@ -1,5 +1,7 @@
 # log ignores
 log/
+*.sqbpro
+.claude/ 
 
 # database
 *.db
