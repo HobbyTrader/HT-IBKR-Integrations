@@ -32,9 +32,9 @@ def main():
     logger.info("[MAIN] - Starting HT-IBKR-Integrations Application")
     
     # Get strategies
-    # strategies = strategie_dto.getActiveStrategies()
+    # strategies = strategie_dto.get_active_strategies()
     strategies: List[Strategy] = []
-    strategies.append(strategie_dto.get_strategyById(1))
+    strategies.append(strategie_dto.get_strategy_by_id(1))
     
     for strategy in strategies:
         # coordinator = OrderCoordinator() 
@@ -63,22 +63,24 @@ def main():
                 # Do the same to define the quantity to buy
                 strategy.apply_strategy_on_instrument(instrument)
                 
-                if(instrument.is_candidate):
-                    instrument_candidates.append(instrument)
-                    scanner_dto.set_order_candidate(exec_key, instrument.id, instrument.is_candidate)
-                    # Stop if reached max candidates defined in strategy - MAX_TRADES_PER_DAY
-                    if(len(instrument_candidates) >= strategy.details.max_trades_per_day):
-                        break
+            if(instrument.is_candidate):
+                with OrderService(1) as order_serv:
+                    order_serv.PlaceBracketOrder(instrument)
+                instrument_candidates.append(instrument)
+                scanner_dto.set_order_candidate(exec_key, instrument.id, instrument.is_candidate)
+                # Stop if reached max candidates defined in strategy - MAX_TRADES_PER_DAY
+                if(len(instrument_candidates) >= strategy.details.max_trades_per_day):
+                    break
                 
                 
                 
         # Generate orders for candidates
-        for instrument in instrument_candidates:
-            logger.info(f"INSTRUMENT CANDIDATE - {instrument}")
+        # for instrument in instrument_candidates:
+        #     logger.info(f"INSTRUMENT CANDIDATE - {instrument}")
             
-            # Get market data for order candidates
-            with OrderService() as order_serv:
-                order_serv.PlaceBracketOrder(instrument)
+        #     # Get market data for order candidates
+        #     with OrderService() as order_serv:
+        #         order_serv.PlaceBracketOrder(instrument)
             
             
         # with ThreadPoolExecutor(max_workers=4) as executor:

@@ -169,6 +169,11 @@
                                 "description": "Maximum volume percentage compared to avg exchanged volume at that time(e.g., 1.0 for 1%)",
                                 "minimum": 0,
                                 "maximum": 100
+                            },
+                            "min_exchange_volume": {
+                                "type": "integer",
+                                "description": "Minimum exchange volume required",
+                                "minimum": 0
                             }
                         }
                     }

@@ -14,7 +14,7 @@
                     },
                     {
                         "name": "priceAbove",
-                        "value": "0.5"
+                        "value": "5"
                     },
                     {
                         "name": "priceBelow",
@@ -28,6 +28,7 @@
                 "max_price_per_trade": 5000,
                 "min_price_per_trade": 1000,
                 "max_trades_per_day": 5,
+                "min_exchange_volume": 100000,
                 "opening_hours": "09:30-16:00",
                 "open_days": ["MON", "TUE", "WED", "THU", "FRI"],
                 "min_open_trade_gap_percentage": 2.0,

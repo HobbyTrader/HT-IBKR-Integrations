@@ -40,6 +40,7 @@ class StrategyDetail:
     open_days: List[str]
     min_open_trade_gap_percentage: float
     max_open_trade_gap_percentage: float
+    min_exchange_volume: int = 0
     
     def to_json(self) -> str:
         return json.dumps(asdict(self))
