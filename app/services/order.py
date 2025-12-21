@@ -4,6 +4,9 @@ import threading
 
 from app.data.instrument import Instrument
 from app.data.strategy import Strategy
+from app.data.market_order import MarketOrder
+
+from app.dto.market_order_dto import MarketOrderDTO
 
 from app.utils.ibapiconnector import IBApiConnector
 
@@ -18,6 +21,18 @@ class OrderService(IBApiConnector):
         self.order_events = {}
         self.CLIENT_ID = clientId
         logger.info(f"[OrderService] - Order initialzed - Client ID: {clientId}")
+        
+    def store_order(self, order: Order, instrument: Instrument):
+        order_dto = MarketOrderDTO()
+        market_order = MarketOrder()
+        market_order.from_order(order, instrument)
+        
+        t = threading.Thread(
+            target=order_dto.save_market_order, args=(market_order,)
+        )
+        t.start()
+        
+        logger.debug(f"[OrderService] - Stored order in DB: {market_order}" )
     
     @iswrapper  
     def nextValidId(self, orderId: int):
@@ -28,6 +43,7 @@ class OrderService(IBApiConnector):
     @iswrapper 
     def openOrder(self, orderId, contract, order, orderState):
         logger.debug(f"[OrderService] - Open Order. orderId: {orderId}, contract: {contract}, order: {order}, orderState: {orderState}.")
+        
         # TODO: Add order in database for watcher
         return super().openOrder(orderId, contract, order, orderState)
     
@@ -72,6 +88,8 @@ class OrderService(IBApiConnector):
         self.order_events[parent.orderId] = buy_events
         events.append(buy_events)
         
+        self.store_order(parent, instrument)
+        
         self.placeOrder(parent.orderId, contract, parent)
 
         takeProfit = Order()
@@ -88,6 +106,8 @@ class OrderService(IBApiConnector):
         target_events = threading.Event()
         self.order_events[takeProfit.orderId] = target_events
         events.append(target_events)
+        
+        self.store_order(takeProfit, instrument)
         
         self.placeOrder(takeProfit.orderId, contract, takeProfit)
 
@@ -107,6 +127,8 @@ class OrderService(IBApiConnector):
         stop_events = threading.Event()
         self.order_events[stopLoss.orderId] = stop_events
         events.append(stop_events)
+        
+        self.store_order(stopLoss, instrument)
         
         self.placeOrder(stopLoss.orderId, contract, stopLoss)
         

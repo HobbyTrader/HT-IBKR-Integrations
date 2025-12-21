@@ -11,7 +11,7 @@
                 "filter_options": [
                     {
                         "name": "volumeAbove",
-                        "value": "100000"
+                        "value": "10000"
                     },
                     {
                         "name": "priceAbove",
@@ -27,7 +27,7 @@
                     },
                     {
                         "name": "openGapPercBelow",
-                        "value": "15"
+                        "value": "25"
                     }
                 ],
                 "maxResults": 50,

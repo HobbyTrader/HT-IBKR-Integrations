@@ -108,6 +108,8 @@ class Strategy:
         return quantity
     
     def apply_strategy_on_instrument(self, instrument: Instrument):
+        instrument.strategy_id = self.id
+        
         # Placeholder logic to determine if an instrument meets strategy criteria
         # Implement actual checks based on strategy details
         if not instrument.daily_history or len(instrument.daily_history) < 4:

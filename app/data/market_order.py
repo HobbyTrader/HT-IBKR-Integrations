@@ -1,6 +1,10 @@
 import logging
 
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass
+
+from ibapi.order import Order
+
+from app.data.instrument import Instrument   
 
 
 logger = logging.getLogger(__name__)
@@ -20,5 +24,22 @@ class MarketOrder:
     create_date: str = ""
     update_date: str = ""
     
+    def from_order_row(self, row: tuple):
+        (self.order_id, self.strategy_id, self.order_details, self.order_status,
+         self.order_quantity, self.order_currency, self.order_price, self.order_type,
+         self.order_action, self.order_parent_id) = row
+
+    def from_order(self, order: Order, instrument: Instrument):
+        self.order_id = order.orderId
+        self.strategy_id = instrument.strategy_id
+        self.order_details = ""
+        self.order_quantity = order.totalQuantity
+        self.order_currency = instrument.currency
+        # En fonction de l'ordre, se baser sur limited price ou autre
+        self.order_price = order.lmtPrice
+        
+        self.order_type = order.orderType
+        self.order_action = order.action
+        self.order_parent_id = order.parentId
     
     

@@ -1,13 +1,14 @@
 import logging
 import string
 import secrets
-
 import sys
-from typing import List
-from concurrent.futures import ThreadPoolExecutor, wait
+import threading
 
-from app.data.instrument import Instrument
+from typing import List
+
 from app.data.strategy import Strategy
+from app.data.instrument import Instrument
+
 from app.dto.strategie_dto import StrategieDTO
 from app.dto.scanner_dto import ScannerDTO
 
@@ -34,8 +35,7 @@ def main():
     strategie_dto = StrategieDTO()
     logger.info("[MAIN] - Starting HT-IBKR-Integrations Application")
     
-    # Get strategies
-    
+    # Get strategies to process
     strategies: List[Strategy] = []
     if tags:
         strategies: List[Strategy] = strategie_dto.get_strategies_by_tags(tags, all_must_match)
@@ -67,11 +67,19 @@ def main():
                 # Do the same to define the quantity to buy
                 strategy.apply_strategy_on_instrument(instrument)
                 
-            if(instrument.is_candidate):
+                # Update the candidate status in the scanner results table asynchronously
+                t = threading.Thread(
+                    target=scanner_dto.set_order_candidate, args=(exec_key, instrument.id, instrument.is_candidate)
+                )
+                t.start()
+                
+            if(instrument.is_candidate):                
+                # Place orders for the candidates (specify any clientId if needed to separate order streams)
                 with OrderService(1) as order_serv:
                     order_serv.PlaceBracketOrder(instrument)
+                    
                 instrument_candidates.append(instrument)
-                scanner_dto.set_order_candidate(exec_key, instrument.id, instrument.is_candidate)
+                
                 # Stop if reached max candidates defined in strategy - MAX_TRADES_PER_DAY
                 if(len(instrument_candidates) >= strategy.details.max_trades_per_day):
                     break
