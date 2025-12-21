@@ -1,8 +1,8 @@
 import json
 import logging
 
-from typing import List
-from dataclasses import dataclass, asdict
+from typing import List, Any
+from dataclasses import dataclass, asdict, field
 
 from ibapi.scanner import ScannerSubscription
 from ibapi.tag_value import TagValue
@@ -24,8 +24,8 @@ class StrategyDetail:
     instrument: str
     locationCode: str
     scanCode: str
-    scan_options: list
-    filter_options: List[FilterOption]
+    scan_options: List[Any] 
+    filter_options: List[FilterOption] 
     maxResults: int
     minutes_to_order: int
     max_shares_to_invest_per_trade: int
@@ -37,10 +37,10 @@ class StrategyDetail:
     stop_loss_percent: float
     take_profit_percent: float
     opening_hours : str
-    open_days: List[str]
-    min_open_trade_gap_percentage: float
-    max_open_trade_gap_percentage: float
-    min_exchange_volume: int = 0
+    open_days: List[str] = field(default_factory = lambda: ["MON", "TUE", "WED", "THU", "FRI"])
+    min_open_trade_gap_percentage: float = 0.0
+    max_open_trade_gap_percentage: float = 0.0
+    increase_position_candidate_percentage: float = 0.0
     
     def to_json(self) -> str:
         return json.dumps(asdict(self))
@@ -114,17 +114,26 @@ class Strategy:
             logger.warning(f"[Instrument] - Not enough daily history data for {instrument.symbol} to determine order candidacy.")
             return 
         
-        # If avg wap of last 6 values (=3 minutes) is higher than the opening price then we have a buying candidate
-        item_num = min(6, len(instrument.daily_history)-1)
+        # If avg wap of last 20 values (=10 minutes) is higher than the opening price then we have a buying candidate
+        # Take the avg exchanged volume into account as well. 
+        item_num = min(20, len(instrument.daily_history)-1)
         logger.debug(f"[Instrument] - Evaluating order candidacy for {instrument.symbol} with {len(instrument.daily_history)} daily history items.")
         waps = [bar.wap for bar in instrument.daily_history[-item_num:]]
-        logger.debug(f"[Instrument] - open value {instrument.daily_history[-item_num].open}: AVG - {sum(waps)/(item_num)} : SUM {sum(waps)} : NUM {item_num}")
-        if (instrument.daily_history[-item_num].open < sum(waps)/(item_num)):
-            instrument.set_market_price()
+        volumes = [bar.volume for bar in instrument.daily_history[-item_num:]]
+        logger.debug(f"[Instrument] - open value {instrument.daily_history[-item_num].open}: AVG - {sum(waps)/(item_num)} : SUM {sum(waps)} : NUM {item_num} : VOLUME AVG {sum(volumes)/(item_num)}")
+        if (instrument.daily_history[-item_num].open * (1 + (self.details.increase_position_candidate_percentage / 100.0)) < sum(waps)/(item_num)):
+            instrument.calculate_avg_volume(item_num)
+            instrument.set_market_price()            
+            instrument.set_volume_buy(self.get_volume_buy(instrument.avg_volume, instrument.market_price))
+            
+            if (instrument.volume_buy * instrument.market_price < self.details.min_price_per_trade):
+                logger.debug(f"[Instrument] - {instrument.symbol} does not meet strategy criteria for order candidacy due to low amount to invest: {instrument.volume_buy * instrument.market_price} < {self.details.min_price_per_trade}.")
+                instrument.is_candidate = False
+                return
+            
             instrument.set_stop_loss_price(self.get_stop_loss_price(instrument.market_price))
             instrument.set_take_profit_price(self.get_take_profit_price(instrument.market_price))
-            instrument.calculate_avg_volume(item_num)
-            instrument.set_volume_buy(self.get_volume_buy(instrument.avg_volume, instrument.market_price))
+            
             instrument.is_candidate = True
         else:
             instrument.is_candidate = False

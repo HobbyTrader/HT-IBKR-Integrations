@@ -128,7 +128,7 @@
                             },
                             "open_days": {
                                 "type": "array",
-                                "description": "Days of the week the market is open",
+                                "description": "Days of the week the market is open. Defaults to weekdays.[\"MON\", \"TUE\", \"WED\", \"THU\", \"FRI\"]",
                                 "items": {
                                     "type": "string",
                                     "enum": [
@@ -170,10 +170,11 @@
                                 "minimum": 0,
                                 "maximum": 100
                             },
-                            "min_exchange_volume": {
-                                "type": "integer",
-                                "description": "Minimum exchange volume required",
-                                "minimum": 0
+                            "increase_position_candidate_percentage": {
+                                "type": "number",
+                                "description": "Percentage threshold to consider increasing position in a candidate (e.g., 0.8 for 0.8%)",
+                                "minimum": 0,
+                                "maximum": 100
                             }
                         }
                     }

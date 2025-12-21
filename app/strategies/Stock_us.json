@@ -10,7 +10,7 @@
                 "filter_options": [
                     {
                         "name": "volumeAbove",
-                        "value": "10000"
+                        "value": "100000"
                     },
                     {
                         "name": "priceAbove",
@@ -28,14 +28,13 @@
                 "max_price_per_trade": 5000,
                 "min_price_per_trade": 1000,
                 "max_trades_per_day": 5,
-                "min_exchange_volume": 100000,
                 "opening_hours": "09:30-16:00",
-                "open_days": ["MON", "TUE", "WED", "THU", "FRI"],
                 "min_open_trade_gap_percentage": 2.0,
                 "max_open_trade_gap_percentage": 10.0,
                 "max_volume_percent": 1.0,
                 "stop_loss_percent": 95.0,
-                "take_profit_percent": 110.0
+                "take_profit_percent": 110.0,
+                "increase_position_candidate_percentage": 0.8
             }
         }
     ]

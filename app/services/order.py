@@ -59,7 +59,10 @@ class OrderService(IBApiConnector):
         parent.orderId = parentOrderId
         parent.action = "BUY"
         # Buy market price!!!
-        parent.orderType = "MKT"
+        # parent.orderType = "MKT"
+        # Buy at Limit price
+        parent.orderType = "LMT"
+        parent.lmtPrice = instrument.market_price  # Placeholder for buy price
         # Define quantity from the strategy
         parent.totalQuantity = quantity
         #The parent and children orders will need this attribute set to False to prevent accidental executions.
