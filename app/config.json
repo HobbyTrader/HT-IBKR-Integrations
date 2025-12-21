@@ -14,5 +14,10 @@
     "loglevel": "INFO",
     "consolelevel": "INFO",
     "backupcount": 2
+  },
+  "cron": {
+    "cron_output_file": "macos_cron_jobs.txt",
+    "cron_script_path": "/path/to/your/",
+    "crom_script_name": "script.py"
   }
 }

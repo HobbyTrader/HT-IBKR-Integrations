@@ -98,5 +98,9 @@ class StrategieDTO:
                        (strategy.name, str(strategy.tags), strategy.details.to_json(), strategy_id))
         self.dbconn.get_connection().commit()
     
-    
+    # def get_all_schedules(self):
+    #     cursor = self.dbconn.get_cursor()
+    #     cursor.execute("SELECT * FROM strategies")
+    #     rows = cursor.fetchall()
+    #     return rows
     

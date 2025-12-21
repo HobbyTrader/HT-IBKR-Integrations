@@ -8,12 +8,18 @@ class LoggerManager:
     LOG_FILE_NAME = f"HT_TOOLS.log"
     # FULL_LOG_PATH = os.path.join(LOG_FOLDER, LOG_FILE_NAME)     
     
-    def __init__(cls, backup_count=5):
+    def __init__(cls, log_filename: str = None):
         if cls._initialized:
             return 
 
         # Get the config.json if exists, fallback on hard-coded values
         log_params = load_config_logging()
+        
+        # Use provided filename, fallback to config file value, then default
+        if log_filename:
+            log_params["logname"] = log_filename
+        elif "logname" not in log_params:
+            log_params["logname"] = cls.LOG_FILE_NAME
         
         os.makedirs(log_params.get("logpath"), exist_ok=True)
         # Define the configuration dictionary
