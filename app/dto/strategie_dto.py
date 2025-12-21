@@ -1,4 +1,5 @@
 import logging
+from typing import List
 
 from app.data.strategy import Strategy, StrategyDetail
 from app.utils.sqllitemanager import SQLiteManager
@@ -14,7 +15,8 @@ class StrategieDTO:
         logger.debug(f"[StrategieDTO] - Converting row to Strategy: {row}")
         id = row[0]
         name = row[1]
-        details_json = row[2]
+        tags = row[2]
+        details_json = row[3]
         logger.debug(f"[StrategieDTO] - Strategy details JSON: {details_json}")
         details_obj = StrategyDetail.from_json(details_json)
         return Strategy(id=id, name=name, details=details_obj)
@@ -22,8 +24,8 @@ class StrategieDTO:
     def save_strategy(self, strategy: Strategy):
         cursor = self.dbconn.get_cursor()
         logger.debug(f"[StrategieDTO] - save Strategy.")
-        cursor.execute("""INSERT INTO strategies (strategy_name, strategy_details) VALUES (?, ?)""",
-                            (strategy.name, strategy.details.to_json()))
+        cursor.execute("""INSERT INTO strategies (strategy_name, strategy_tags, strategy_details) VALUES (?, ?, ?)""",
+                            (strategy.name, strategy.tags, strategy.details.to_json()))
         self.dbconn.get_connection().commit()
     
     def get_active_strategies(self)-> list[Strategy]:
@@ -56,7 +58,30 @@ class StrategieDTO:
             return self.row_to_strategy(row)
         else:
             return None
-    
+        
+    def get_strategies_by_tags(self, tags: List[str], all_must_match: bool=False) -> List[Strategy]:
+        cursor = self.dbconn.get_cursor()
+        logger.debug(f"[StrategieDTO] - Getting Strategies by tags: {tags}")
+        # Convert tags to a list of strings if it's a single string
+        if isinstance(tags, str):
+            tags = [tags]
+            
+        # Create condition for SQL query based on all_must_match flag
+        condition = ' AND '.join(' strategy_tags LIKE ?' * len(tags)) if all_must_match else ' OR '.join(' strategy_tags LIKE ?' * len(tags))
+        params = [f'%{tag}%' for tag in tags]
+
+        cursor.execute(f"SELECT strategy_id, strategy_name, strategy_details FROM strategies WHERE {condition}", params)
+        
+        rows = cursor.fetchall()
+        
+        strategies = []
+        for row in rows:
+            # Create Strategy object
+            strategy = self.row_to_strategy(row)
+            strategies.append(strategy)
+        
+        return strategies
+
     def deactivate_strategy(self, strategy_id):
         cursor = self.dbconn.get_cursor()
         logger.debug(f"[StrategieDTO] - Deactivating Strategy ID: {strategy_id}.")
@@ -66,8 +91,8 @@ class StrategieDTO:
     def update_strategy(self, strategy_id, strategy: Strategy):
         cursor = self.dbconn.get_cursor()
         logger.debug(f"[StrategieDTO] - Updating Strategy ID: {strategy_id}.")
-        cursor.execute("UPDATE strategies SET strategy_name = ?, strategy_details = ?, update_date = CURRENT_TIMESTAMP WHERE strategy_id = ?",
-                       (strategy.name, strategy.details.to_json(), strategy_id))
+        cursor.execute("UPDATE strategies SET strategy_name = ?, strategy_tags = ?, strategy_details = ?, update_date = CURRENT_TIMESTAMP WHERE strategy_id = ?",
+                       (strategy.name, str(strategy.tags), strategy.details.to_json(), strategy_id))
         self.dbconn.get_connection().commit()
     
     

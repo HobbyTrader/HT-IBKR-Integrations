@@ -23,6 +23,7 @@ class Instrument:
     take_profit_price: float = 0.0
     volume_buy: int = 0
     is_candidate: bool = False
+    strategy_id: int = 0
     
     @classmethod
     def from_row(cls, row: tuple):  

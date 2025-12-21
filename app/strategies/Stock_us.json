@@ -2,6 +2,7 @@
     "strategies": [
         {
             "name": "US Stock High Open Gap Scan",
+            "tags": ["US", "STOCK", "OPEN_GAP"],
             "details": {
                 "instrument": "STK",
                 "locationCode": "STK.US.MAJOR",
@@ -19,6 +20,14 @@
                     {
                         "name": "priceBelow",
                         "value": "100"
+                    },
+                    {
+                        "name": "openGapPercAbove",
+                        "value": "10"
+                    },
+                    {
+                        "name": "openGapPercBelow",
+                        "value": "15"
                     }
                 ],
                 "maxResults": 50,

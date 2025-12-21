@@ -21,6 +21,13 @@
                         "type": "string",
                         "description": "Name of the strategy"
                     },
+                    "tags": {
+                        "type": "array",
+                        "description": "Tags associated with the strategy",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
                     "details": {
                         "type": "object",
                         "description": "Detailed configuration for the strategy",

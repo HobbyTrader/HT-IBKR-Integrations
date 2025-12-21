@@ -2,6 +2,7 @@
     "strategies": [
         {
             "name": "EU-DE Stock High Open Gap Scan",
+            "tags": ["EU", "STOCK", "OPEN_GAP"],
             "details": {
                 "instrument": "STOCK.EU",
                 "locationCode": "STK.EU.IBIS",
@@ -19,6 +20,14 @@
                     {
                         "name": "priceBelow",
                         "value": "100"
+                    },
+                    {
+                        "name": "openGapPercAbove",
+                        "value": "10"
+                    },
+                    {
+                        "name": "openGapPercBelow",
+                        "value": "15"
                     }
                 ],
                 "maxResults": 50,

@@ -6,7 +6,6 @@ from dataclasses import dataclass, asdict, field
 
 from ibapi.scanner import ScannerSubscription
 from ibapi.tag_value import TagValue
-from ibapi.order import Order
 from app.data.instrument import Instrument
 
 logger = logging.getLogger(__name__)
@@ -72,7 +71,8 @@ class StrategyDetail:
 @dataclass
 class Strategy:
     name: str
-    details: StrategyDetail
+    tags: List[str] = field(default_factory=lambda: [])
+    details: StrategyDetail = None
     id: int = None
     is_active: bool = True
     created_at: str = None
@@ -88,7 +88,7 @@ class Strategy:
         else:
             data = json_str_or_dict  # Already a dict
         details = StrategyDetail.from_json(data['details'])
-        return cls(name=data['name'], details=details)
+        return cls(name=data['name'], tags=data['tags'], details=details)
     
     
     def get_stop_loss_price(self, buy_price: float) -> float:
