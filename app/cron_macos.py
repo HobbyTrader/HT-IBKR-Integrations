@@ -3,9 +3,21 @@ import logging
 from pathlib import Path
 import platform
 
+from app.__init__ import load_config_cron
 from app.dto.strategie_dto import StrategieDTO
+from app.utils.logger import LoggerManager
 
+LoggerManager(log_filename="cron_macos.log")
 logger = logging.getLogger(__name__)
+
+config = load_config_cron()
+command_output_file = config["cron_output_file"]
+command_output_path = config["cron_output_path"]
+command_path = config["cron_script_path"]
+command_name = config["cron_script_name"]
+command_params = config["cron_script_params"]
+command_script_path = f"{command_path}{command_name} {command_params}"
+# TODO: Tester si on sait forcer le path du script à l'exécution ou s'il faut faire un cd d'abord!!!!
 
 def load_schedules_from_db():
     schedules = []
@@ -16,17 +28,10 @@ def load_schedules_from_db():
         schedules.append({
             "strategy_id": strategy.id,
             "strategy_name": strategy.name,
-            "cron_expr": strategy.build_cron_schedules(),
-            "command": ,        })
-        
+            "cron_expr": "45 9 * * 1-5",  #strategy.build_cron_schedules(),})
+            "command": f"python3 {command_script_path}", })
+                         
     return schedules
-#     conn = sqlite3.connect(db_path)
-#     conn.row_factory = sqlite3.Row
-#     cur = conn.cursor()
-#     cur.execute("SELECT * FROM schedules")
-#     rows = cur.fetchall()
-#     conn.close()
-#     return rows
 
 def generate_macos_crontab_lines(schedules):
     """
@@ -35,8 +40,7 @@ def generate_macos_crontab_lines(schedules):
     """
     lines = []
     for row in schedules:
-        if row["os"].lower() != "macos":
-            continue
+        logger.info(f"Processing schedule for strategy: {row['strategy_name']}")
         cron_expr = row["cron_expr"]         # ex: "0 * * * *"
         command = row["command"]             # ex: "/usr/bin/python3 /path/to/script.py"
         lines.append(f"{cron_expr} {command}")

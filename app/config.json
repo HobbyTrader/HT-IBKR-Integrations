@@ -17,7 +17,9 @@
   },
   "cron": {
     "cron_output_file": "macos_cron_jobs.txt",
-    "cron_script_path": "/path/to/your/",
-    "crom_script_name": "script.py"
+    "cron_output_path": "/Users/greg/Dev/HTTrader/HT-IBKR-Integrations/cron_script",
+    "cron_script_name": "app.main",
+    "cron_script_path": "/Users/greg/Dev/HTTrader/HT-IBKR-Integrations/",
+    "cron_script_params": ""
   }
 }

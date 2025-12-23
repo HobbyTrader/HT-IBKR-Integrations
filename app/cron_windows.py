@@ -3,6 +3,9 @@ import logging
 from pathlib import Path
 import platform
 
+from app.utils.logger import LoggerManager
+
+LoggerManager(log_filename="cron_windows.log")
 logger = logging.getLogger(__name__)
 
 def generate_windows_powershell_lines(schedules):
