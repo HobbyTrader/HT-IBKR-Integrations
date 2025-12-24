@@ -121,9 +121,10 @@ class Strategy:
         item_num = min(20, len(instrument.daily_history)-1)
         logger.debug(f"[Instrument] - Evaluating order candidacy for {instrument.symbol} with {len(instrument.daily_history)} daily history items.")
         waps = [bar.wap for bar in instrument.daily_history[-item_num:]]
+        avg_price = sum(waps)/(item_num)
         volumes = [bar.volume for bar in instrument.daily_history[-item_num:]]
-        logger.debug(f"[Instrument] - open value {instrument.daily_history[-item_num].open}: AVG - {sum(waps)/(item_num)} : SUM {sum(waps)} : NUM {item_num} : VOLUME AVG {sum(volumes)/(item_num)}")
-        if (instrument.daily_history[-item_num].open * (1 + (self.details.increase_position_candidate_percentage / 100.0)) < sum(waps)/(item_num)):
+        logger.debug(f"[Instrument] - [{instrument.symbol}] - open value {instrument.daily_history[-item_num].open}: PRICE AVG - {avg_price} : VOLUME AVG {sum(volumes)/(item_num)}")
+        if (instrument.daily_history[-item_num].open * (1 + (self.details.increase_position_candidate_percentage / 100.0)) < avg_price):
             instrument.calculate_avg_volume(item_num)
             instrument.set_market_price()            
             instrument.set_volume_buy(self.get_volume_buy(instrument.avg_volume, instrument.market_price))
@@ -138,5 +139,6 @@ class Strategy:
             
             instrument.is_candidate = True
         else:
+            logger.debug(f"[Instrument] - {instrument.symbol} does not meet strategy criteria for order candidacy due to insufficient price increase.")
             instrument.is_candidate = False
         return

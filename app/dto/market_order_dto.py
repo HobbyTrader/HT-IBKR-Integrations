@@ -1,5 +1,6 @@
 import logging
 
+from app.data.market_order import MarketOrder
 from app.utils.sqllitemanager import SQLiteManager
 
 logger = logging.getLogger(__name__)
@@ -8,9 +9,9 @@ class MarketOrderDTO:
     def __init__(self):
         self.dbconn = SQLiteManager()
         
-    def save_market_order(self, market_order):
+    def save_market_order(self, market_order: MarketOrder):
         cursor = self.dbconn.conn.cursor()
-        logger.debug(f"[MarketOrderDTO] - save MarketOrder. MarketOrder: {market_order}")
+        logger.info(f"[MarketOrderDTO] - save MarketOrder. MarketOrder: {market_order}")
         cursor.execute(
             """INSERT INTO market_orders (strategy_id, order_details, order_status, order_quantity, order_currency, order_price, order_type, order_action, order_parent_id, create_date, update_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (market_order.strategy_id, market_order.order_details, market_order.order_status, market_order.order_quantity, market_order.order_currency, market_order.order_price, market_order.order_type, market_order.order_action, market_order.order_parent_id))

@@ -25,7 +25,7 @@ class StrategieDTO:
         cursor = self.dbconn.get_cursor()
         logger.debug(f"[StrategieDTO] - save Strategy.")
         cursor.execute("""INSERT INTO strategies (strategy_name, strategy_tags, strategy_details) VALUES (?, ?, ?)""",
-                            (strategy.name, strategy.tags, strategy.details.to_json()))
+                            (strategy.name, str(strategy.tags), strategy.details.to_json()))
         self.dbconn.get_connection().commit()
     
     def get_active_strategies(self)-> list[Strategy]:
@@ -67,10 +67,13 @@ class StrategieDTO:
             tags = [tags]
             
         # Create condition for SQL query based on all_must_match flag
-        condition = ' AND '.join(' strategy_tags LIKE ?' * len(tags)) if all_must_match else ' OR '.join(' strategy_tags LIKE ?' * len(tags))
+        str_condition = ["strategy_tags LIKE ?"] * len(tags) 
+        condition = ' AND '.join(str_condition) if all_must_match else ' OR '.join(str_condition)
         params = [f'%{tag}%' for tag in tags]
+        
+        logger.info(f"[StrategieDTO] - SQL Condition: {condition}, Params: {params}")
 
-        cursor.execute(f"SELECT strategy_id, strategy_name, strategy_details FROM strategies WHERE {condition}", params)
+        cursor.execute(f"SELECT strategy_id, strategy_name, strategy_tags, strategy_details FROM strategies WHERE {condition}", params)
         
         rows = cursor.fetchall()
         

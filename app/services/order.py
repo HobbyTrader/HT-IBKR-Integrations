@@ -27,22 +27,24 @@ class OrderService(IBApiConnector):
         market_order = MarketOrder()
         market_order.from_order(order, instrument)
         
+        logger.info(f"[OrderService] - START - Stored order in DB: {market_order}" )
+        
         t = threading.Thread(
             target=order_dto.save_market_order, args=(market_order,)
         )
         t.start()
         
-        logger.debug(f"[OrderService] - Stored order in DB: {market_order}" )
+        logger.info(f"[OrderService] - Stored order in DB: {market_order}" )
     
     @iswrapper  
     def nextValidId(self, orderId: int):
         super().nextValidId(orderId)
         self.orderId = orderId
-        logger.debug(f"[OrderService] - Next Valid Id: {orderId}.")
+        logger.debug(f"[OrderService] - END - Next Valid Id: {orderId}.")
     
     @iswrapper 
     def openOrder(self, orderId, contract, order, orderState):
-        logger.debug(f"[OrderService] - Open Order. orderId: {orderId}, contract: {contract}, order: {order}, orderState: {orderState}.")
+        logger.info(f"[OrderService] - Open Order. orderId: {orderId}, contract: {contract}, order: {order}, orderState: {orderState}.")
         
         # TODO: Add order in database for watcher
         return super().openOrder(orderId, contract, order, orderState)
@@ -50,7 +52,7 @@ class OrderService(IBApiConnector):
     @iswrapper
     def orderStatus(self, orderId, status, filled, remaining, avgFillPrice, permId,
                     parentId, lastFillPrice, clientId, whyHeld, mktCapPrice):
-        logger.debug(f"[OrderService] - Order Status. orderId: {orderId}, status: {status}, filled: {filled}, remaining: {remaining}, avgFillPrice: {avgFillPrice}, permId: {permId}, parentId: {parentId}, lastFillPrice: {lastFillPrice}, clientId: {clientId}, whyHeld: {whyHeld}, mktCapPrice: {mktCapPrice}.")
+        logger.info(f"[OrderService] - Order Status. orderId: {orderId}, status: {status}, filled: {filled}, remaining: {remaining}, avgFillPrice: {avgFillPrice}, permId: {permId}, parentId: {parentId}, lastFillPrice: {lastFillPrice}, clientId: {clientId}, whyHeld: {whyHeld}, mktCapPrice: {mktCapPrice}.")
         super().orderStatus(orderId, status, filled, remaining, avgFillPrice,
                                   permId, parentId, lastFillPrice, clientId,
                                   whyHeld, mktCapPrice)

@@ -15,7 +15,7 @@
                     },
                     {
                         "name": "priceAbove",
-                        "value": "0.5"
+                        "value": "5"
                     },
                     {
                         "name": "priceBelow",
@@ -27,7 +27,7 @@
                     },
                     {
                         "name": "openGapPercBelow",
-                        "value": "15"
+                        "value": "40"
                     }
                 ],
                 "maxResults": 50,

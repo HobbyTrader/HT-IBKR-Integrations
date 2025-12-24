@@ -11,7 +11,7 @@
   "logging": {
     "logpath": "LOG",
     "logname": "HT_TOOLS.log",
-    "loglevel": "DEBUG",
+    "loglevel": "INFO",
     "consolelevel": "INFO",
     "backupcount": 2
   }

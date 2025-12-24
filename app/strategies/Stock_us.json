@@ -23,11 +23,11 @@
                     },
                     {
                         "name": "openGapPercAbove",
-                        "value": "10"
+                        "value": "5"
                     },
                     {
                         "name": "openGapPercBelow",
-                        "value": "25"
+                        "value": "35"
                     }
                 ],
                 "maxResults": 50,
