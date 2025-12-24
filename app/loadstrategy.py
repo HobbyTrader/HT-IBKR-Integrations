@@ -11,9 +11,15 @@ from app.dto.strategie_dto import StrategieDTO
 logger = logging.getLogger(__name__)
 
 def insert_strategy(dto, strategies):
-    for strategy in strategies.get("strategies", []):
-        logger.info(f"STRATEGY - {strategy}")
-        dto.saveStrategy(Strategy.from_json(strategy))
+    for strategy_json in strategies.get("strategies", []):
+        logger.info(f"STRATEGY - {strategy_json}")
+        strategy = Strategy.from_json(strategy_json)
+        strategy_db = dto.get_strategy_by_name(strategy.name)
+        if strategy_db:
+            logger.info(f"Strategy {strategy.name} already exists. Update existing strategy.")
+            dto.update_strategy(strategy_db.id, strategy)
+            continue
+        dto.save_strategy(strategy)
        
 
 def main(json_file_path: str):

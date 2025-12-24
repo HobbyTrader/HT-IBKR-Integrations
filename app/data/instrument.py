@@ -16,6 +16,7 @@ class Instrument:
     sectype: str
     currency: str
     exchange: str
+    strategy_id: int = 0
     daily_history: List[BarData] = field(default_factory=list)
     market_price: float = 0.0
     avg_volume: float = 0.0
@@ -25,7 +26,8 @@ class Instrument:
     is_candidate: bool = False
     
     @classmethod
-    def from_row(cls, row: tuple):  
+    def from_row(cls, row: tuple):
+        # Expecting row to have at least 5 elements: id, symbol, sectype, currency, exchange  
         if len(row) < 5:
             raise ValueError("Invalid row")
         return cls(*row[:5])

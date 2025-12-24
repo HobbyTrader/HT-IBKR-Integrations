@@ -1,12 +1,14 @@
 import logging
 import string
 import secrets
+import sys
+import threading
 
 from typing import List
-from concurrent.futures import ThreadPoolExecutor, wait
 
-from app.data.instrument import Instrument
 from app.data.strategy import Strategy
+from app.data.instrument import Instrument
+
 from app.dto.strategie_dto import StrategieDTO
 from app.dto.scanner_dto import ScannerDTO
 
@@ -17,6 +19,8 @@ from app.services.order import OrderService
 # from app.utils.ordercoordinator import OrderCoordinator
 
 logger = logging.getLogger(__name__)
+tags = []
+all_must_match = False
 
 def generate_key(length=10) -> str:
     chars = string.ascii_uppercase + string.digits
@@ -31,24 +35,24 @@ def main():
     strategie_dto = StrategieDTO()
     logger.info("[MAIN] - Starting HT-IBKR-Integrations Application")
     
-    # Get strategies
-    # strategies = strategie_dto.getActiveStrategies()
+    # Get strategies to process
     strategies: List[Strategy] = []
-    strategies.append(strategie_dto.get_strategyById(1))
+    if tags:
+        strategies: List[Strategy] = strategie_dto.get_strategies_by_tags(tags, all_must_match)
+    else:
+        # strategies = strategie_dto.get_active_strategies()
+        strategies.append(strategie_dto.get_strategy_by_id(1))
     
     for strategy in strategies:
-        # coordinator = OrderCoordinator() 
-        
-        logger.info(f"STRATEGY - {strategy}")
         exec_key = generate_key()
-        logger.info(f"EXEC KEY - {exec_key}")
+        logger.info(f"STRATEGY - {strategy} - EXEC KEY - {exec_key}")
         # Get scanner market data
         with ScannerService(strategy.id, exec_key) as scanner_serv:
-            scanner_serv.get_scannerResult(strategy)
+            scanner_serv.get_scanner_result(strategy)
     
         # Get the instrument candidates to perform the orders    
         scanner_dto = ScannerDTO()
-        scanner_results = scanner_dto.get_instrumentsByExecKey(exec_key)
+        scanner_results = scanner_dto.get_instruments_by_exec_key(exec_key)
         
         instrument_candidates = [ ]
         for instrument in scanner_results:
@@ -63,35 +67,33 @@ def main():
                 # Do the same to define the quantity to buy
                 strategy.apply_strategy_on_instrument(instrument)
                 
-                if(instrument.is_candidate):
-                    instrument_candidates.append(instrument)
-                    scanner_dto.set_order_candidate(exec_key, instrument.id, instrument.is_candidate)
-                    # Stop if reached max candidates defined in strategy - MAX_TRADES_PER_DAY
-                    if(len(instrument_candidates) >= strategy.details.max_trades_per_day):
-                        break
+                # Update the candidate status in the scanner results table asynchronously
+                t = threading.Thread(
+                    target=scanner_dto.set_order_candidate, args=(exec_key, instrument.id, instrument.is_candidate)
+                )
+                t.start()
                 
+            if(instrument.is_candidate):                
+                # Place orders for the candidates (specify any clientId if needed to separate order streams)
+                with OrderService(1) as order_serv:
+                    order_serv.PlaceBracketOrder(instrument)
+                    
+                instrument_candidates.append(instrument)
                 
+                # Stop if reached max candidates defined in strategy - MAX_TRADES_PER_DAY
+                if(len(instrument_candidates) >= strategy.details.max_trades_per_day):
+                    break
                 
-        # Generate orders for candidates
-        for instrument in instrument_candidates:
-            logger.info(f"INSTRUMENT CANDIDATE - {instrument}")
-            
-            # Get market data for order candidates
-            with OrderService() as order_serv:
-                order_serv.PlaceBracketOrder(instrument)
-            
-            
-        # with ThreadPoolExecutor(max_workers=4) as executor:
-        #     futures = [
-        #         executor.submit(fire_generate_orders, instrument, clientId = coordinator.get_next_clientId()) 
-        #         for instrument in instrument_candidates]
-        #     wait(futures)
-            
-        # coordinator.wait_all_orders()
-
-
     logger.info("HT-IBKR-Integrations Application Finished")
     
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        logger.info(f"Starting with arguments: TAGS = {sys.argv[1]}")
+        tags = sys.argv[1].split(',')
+        if len(sys.argv) > 2:
+            logger.info(f"Starting with arguments: ALL_MATCH {sys.argv[2]}")
+            all_must_match = sys.argv[2].lower() == 'true'
+    else:
+        logger.info("Starting without arguments.")
     main()

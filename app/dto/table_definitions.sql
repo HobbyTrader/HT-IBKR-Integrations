@@ -3,6 +3,7 @@
 CREATE TABLE IF NOT EXISTS strategies (
     strategy_id INTEGER PRIMARY KEY AUTOINCREMENT,
     strategy_name TEXT NOT NULL,
+    strategy_tags TEXT,
     strategy_details TEXT NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT 1,
     create_date  TEXT NOT NULL DEFAULT (datetime('now')),
@@ -32,18 +33,17 @@ CREATE TABLE IF NOT EXISTS scanner_results (
 -- Permet de suivre les ordres et leurs statuts. 
 -- On pourra donc faire un suivi des gains/pertes
 -- On pourra aussi vérifier ce qui n'est pas encore vendu afin de forcer une vente si besoin
-CREATE TABLE IF NOT EXISTS orders (
+CREATE TABLE IF NOT EXISTS market_orders (
     order_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    exec_key TEXT NOT NULL,
     strategy_id INTEGER NOT NULL,
     order_details TEXT NOT NULL,
-    status TEXT NOT NULL,
-    amount_buy REAL NOT NULL DEFAULT 0,
-    amount_sell REAL,
-    amount_currency TEXT NOT NULL, -- USD, EUR, etc. vient de la stratégie
-    instrument_price REAL NOT NULL,
-    order_stop_loss REAL NOT NULL,
-    order_take_profit REAL NOT NULL,
+    order_status TEXT NOT NULL,
+    order_quantity INTEGER NOT NULL DEFAULT 0,
+    order_currency TEXT NOT NULL, -- USD, EUR, etc. vient de l'instrument
+    order_price REAL NOT NULL,
+    order_type TEXT NOT NULL,
+    order_action TEXT NOT NULL,
+    order_parent_id INTEGER DEFAULT 0,
     create_date  TEXT NOT NULL DEFAULT (datetime('now')),
     update_date  TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (strategy_id) REFERENCES strategies(strategy_id)

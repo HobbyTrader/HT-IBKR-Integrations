@@ -35,7 +35,7 @@ class ScannerService(IBApiConnector):
         self.reqScannerParameters()
         time.sleep(5)
 
-    def get_scannerResult(self, strategy: Strategy):
+    def get_scanner_result(self, strategy: Strategy):
         logger.debug("[ScannerService] - Scanner Data requested")
         scannerSubscription = strategy.details.to_scannerSubscription()
         scannerOptions = strategy.details.to_scannerOptions()

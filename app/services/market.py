@@ -51,7 +51,7 @@ class MarketService(IBApiConnector):
         contract.secType = self.instrument.sectype
         contract.currency = self.instrument.currency
         contract.exchange = self.instrument.exchange
-        self.reqHistoricalData(self.orderId, contract,"", "3 D", "30 mins", "TRADES",0,1, False, [])
+        self.reqHistoricalData(self.orderId, contract,"", "1 D", "30 secs", "TRADES",0,1, False, [])
         
         evt.wait(timeout=15)
         self.Historical_events.pop(self.instrument.symbol, None)
