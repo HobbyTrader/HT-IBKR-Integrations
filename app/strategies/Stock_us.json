@@ -43,7 +43,7 @@
                 "max_volume_percent": 1.0,
                 "stop_loss_percent": 95.0,
                 "take_profit_percent": 110.0,
-                "increase_position_candidate_percentage": 0.8
+                "increase_position_candidate_percentage": 0.5
             }
         }
     ]

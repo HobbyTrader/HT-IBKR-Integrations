@@ -30,7 +30,7 @@ class StrategieDTO:
     
     def get_active_strategies(self)-> list[Strategy]:
         cursor = self.dbconn.get_cursor()
-        cursor.execute("SELECT strategy_id, strategy_name, strategy_details FROM strategies where is_active = 1")
+        cursor.execute("SELECT strategy_id, strategy_name, strategy_tags, strategy_details FROM strategies where is_active = 1")
         rows = cursor.fetchall()
         
         strategies = []

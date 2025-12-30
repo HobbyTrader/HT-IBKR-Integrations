@@ -22,7 +22,7 @@ command_script_path = f"{command_path}{command_name} {command_params}"
 def load_schedules_from_db():
     schedules = []
     strategies_dto = StrategieDTO()
-    strategies = strategies_dto.getActiveStrategies()
+    strategies = strategies_dto.get_active_strategies()
     for strategy in strategies:
         logger.info(f"Active Strategy: {strategy}") 
         schedules.append({
