@@ -29,7 +29,8 @@ def load_schedules_from_db():
             "strategy_id": strategy.id,
             "strategy_name": strategy.name,
             "cron_expr": "45 9 * * 1-5",  #strategy.build_cron_schedules(),})
-            "command": f"python3 {command_script_path}", })
+            "command": f"python3 {command_script_path}",
+            "tags": strategy.tags})
                          
     return schedules
 
@@ -39,11 +40,13 @@ def generate_macos_crontab_lines(schedules):
     On suppose que chaque ligne a un champ 'cron_expr' et 'command'.
     """
     lines = []
+    
     for row in schedules:
         logger.info(f"Processing schedule for strategy: {row['strategy_name']}")
         cron_expr = row["cron_expr"]         # ex: "0 * * * *"
         command = row["command"]             # ex: "/usr/bin/python3 /path/to/script.py"
-        lines.append(f"{cron_expr} {command}")
+        tags = row.get("tags", [])
+        lines.append(f"{cron_expr} {command} {','.join(str(tag) for tag in tags)} True")
     return lines
 
 def write_macos_crontab_file(lines, output_file: str):

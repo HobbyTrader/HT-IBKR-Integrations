@@ -14,6 +14,7 @@ class MarketOrderDTO:
         logger.info(f"[MarketOrderDTO] - save MarketOrder. MarketOrder: {market_order}")
         cursor.execute(
             """INSERT INTO market_orders (
+                order_id,
                 strategy_id, 
                 order_details, 
                 order_status, 
@@ -25,7 +26,9 @@ class MarketOrderDTO:
                 order_parent_id) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
-            (market_order.strategy_id, 
+            (
+             market_order.order_id,
+             market_order.strategy_id, 
              market_order.order_details, 
              market_order.order_status, 
              market_order.order_quantity, 

@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class MarketOrder:
+    id: int = 0
     order_id: int = 0
     strategy_id: int = 0
     order_details: str = ""
@@ -25,7 +26,7 @@ class MarketOrder:
     update_date: str = ""
     
     def from_order_row(self, row: tuple):
-        (self.order_id, self.strategy_id, self.order_details, self.order_status,
+        (self.id, self.order_id, self.strategy_id, self.order_details, self.order_status,
          self.order_quantity, self.order_currency, self.order_price, self.order_type,
          self.order_action, self.order_parent_id) = row
 

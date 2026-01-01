@@ -15,11 +15,24 @@ class StrategieDTO:
         logger.debug(f"[StrategieDTO] - Converting row to Strategy: {row}")
         id = row[0]
         name = row[1]
-        tags = row[2]
+        raw_tags = row[2]
         details_json = row[3]
         logger.debug(f"[StrategieDTO] - Strategy details JSON: {details_json}")
         details_obj = StrategyDetail.from_json(details_json)
-        return Strategy(id=id, name=name, details=details_obj)
+        
+        if isinstance(raw_tags, str):
+            # Handle string like "['US', 'STOCK']" or "US,STOCK"
+            if raw_tags.startswith('['):
+                tags = [t.strip().strip(" '\"") for t in raw_tags.strip("[]").split(",")]
+            else:
+                tags = [t.strip() for t in raw_tags.split(",")]
+            tags = [t for t in tags if t]  # Remove empty strings
+        elif isinstance(raw_tags, list):
+            tags = [str(t) for t in raw_tags]
+        else:
+            tags = []
+            
+        return Strategy(id=id, name=name, details=details_obj, tags=tags)
     
     def save_strategy(self, strategy: Strategy):
         cursor = self.dbconn.get_cursor()

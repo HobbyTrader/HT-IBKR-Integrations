@@ -27,7 +27,7 @@
                     },
                     {
                         "name": "openGapPercBelow",
-                        "value": "35"
+                        "value": "55"
                     }
                 ],
                 "maxResults": 50,
