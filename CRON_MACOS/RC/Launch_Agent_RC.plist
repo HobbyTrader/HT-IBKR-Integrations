@@ -2,16 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
   <dict>
-    <key>Label</key><string>com.hobbytrader.htibkr.morning</string>
+    <key>Label</key><string>HT_LoadStrategy</string>
     <key>ProgramArguments</key>
     <array>
-      <string>/Users/greg/Dev/HTTrader/HT-IBKR-Integrations/.venv/bin/python3</string>
-      <string>-m</string>
-      <string>app.loadstrategy</string>
+      <string>/Users/greg/Applications/HTTrader/Release/bin/loadstrategy</string>
       <string>Stock_us.json</string>
     </array>
     <key>WorkingDirectory</key>
-    <string>/Users/greg/Dev/HTTrader/HT-IBKR-Integrations</string>
+    <string>/Users/greg/Applications/HTTrader/Release</string>
     <key>StartCalendarInterval</key>
     <array>
       <!-- Weekday: 2=Mon ... 6=Fri -->
@@ -23,11 +21,11 @@
     <key>EnvironmentVariables</key>
     <dict>
       <key>TZ</key><string>Europe/Brussels</string>
-      <key>PYTHONPATH</key><string>/Users/greg/Dev/HTTrader/HT-IBKR-Integrations</string>
+      <key>PYTHONPATH</key><string>/Users/greg/Applications/HTTrader/Release</string>
     </dict>
 
     <key>RunAtLoad</key><false/>
-    <key>StandardOutPath</key><string>/tmp/htibkr_morning.out</string>
-    <key>StandardErrorPath</key><string>/tmp/htibkr_morning.err</string>
+    <key>StandardOutPath</key><string>/Users/greg/Applications/HTTrader/Release/LoadStrategy.out</string>
+    <key>StandardErrorPath</key><string>/Users/greg/Applications/HTTrader/Release/LoadStrategy.err</string>
   </dict>
 </plist>

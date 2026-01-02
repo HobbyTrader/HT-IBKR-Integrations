@@ -1,7 +1,7 @@
 {
   "database": {
-    "filename": "app/htibkr.db",
-    "tabledefinitions": "app/dto/table_definitions.sql"
+    "filename": "database/htibkr.db",
+    "tabledefinitions": "table_definitions.sql"
   },
   "IBKR": {
     "HOST": "localhost",
@@ -14,12 +14,5 @@
     "loglevel": "DEBUG",
     "consolelevel": "INFO",
     "backupcount": 2
-  },
-  "cron": {
-    "cron_output_file": "macos_cron_jobs.txt",
-    "cron_output_path": "/Users/greg/Dev/HTTrader/HT-IBKR-Integrations/cron_script",
-    "cron_script_name": "app.main",
-    "cron_script_path": "/Users/greg/Dev/HTTrader/HT-IBKR-Integrations/",
-    "cron_script_params": ""
   }
 }
