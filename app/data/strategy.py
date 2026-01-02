@@ -88,7 +88,8 @@ class Strategy:
         else:
             data = json_str_or_dict  # Already a dict
         details = StrategyDetail.from_json(data['details'])
-        return cls(name=data['name'], tags=data['tags'], details=details)
+        tags = data.get('tags', [])
+        return cls(name=data['name'], tags=tags, details=details)
     
     
     def get_stop_loss_price(self, buy_price: float) -> float:

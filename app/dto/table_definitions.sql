@@ -34,7 +34,8 @@ CREATE TABLE IF NOT EXISTS scanner_results (
 -- On pourra donc faire un suivi des gains/pertes
 -- On pourra aussi vérifier ce qui n'est pas encore vendu afin de forcer une vente si besoin
 CREATE TABLE IF NOT EXISTS market_orders (
-    order_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id INTEGER,
     strategy_id INTEGER NOT NULL,
     order_details TEXT NOT NULL,
     order_status TEXT NOT NULL,

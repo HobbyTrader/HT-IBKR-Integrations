@@ -4,6 +4,7 @@ import logging
 
 from app.utils.logger import LoggerManager
 from app.utils import load_config_db
+from importlib.resources import files
 
 logger = logging.getLogger(__name__)
 
@@ -12,10 +13,11 @@ class SQLiteManager:
         """Initialize the SQLiteManager with configuration."""
         config = load_config_db()
         self.db_path = config.get("filename")
-        self.table_definitions_file = config.get("tabledefinitions")
+        self.table_definitions_file = files('app.dto').joinpath(config.get("tabledefinitions"))
 
         self.connect()
-        self.verify_and_create_tables()
+        # Initialize tables if not already done - Moved to db_init script
+        # self.initialize_tables()
         self._initialized = True
     
     def connect(self):
@@ -83,7 +85,7 @@ class SQLiteManager:
         finally:
             cursor.close()
 
-    def verify_and_create_tables(self):
+    def initialize_tables(self):
         """
         Verify if required tables exist.
         If any table is missing, create all tables using the definition file.

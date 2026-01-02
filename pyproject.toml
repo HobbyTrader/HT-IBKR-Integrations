@@ -23,14 +23,18 @@ dependencies = [
     "ibapi (>=9.81.1.post1,<10.0.0)"
 ]
 
-[tool.poetry]
-packages = [
-    { include = "app" }
-]
-
 [build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project.scripts]
 scan = "app.main:main"
+loadstrategy = "app.loadstrategy:main"
+init-db = "app.utils.db_init:initialize_database"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[tool.setuptools.package-data]
+app = ["config.json", "dto/table_definitions.sql", "strategies/*.json"]

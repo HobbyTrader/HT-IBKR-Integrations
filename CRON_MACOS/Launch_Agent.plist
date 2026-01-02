@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key><string>HT_LoadStrategy</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/Users/greg/Applications/HTTrader/.venv/bin/loadstrategy</string>
+      <string>Stock_us.json</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/greg/Applications/HTTrader</string>
+    <key>StartCalendarInterval</key>
+    <array>
+      <!-- Weekday: 2=Mon ... 6=Fri -->
+      <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>48</integer></dict>
+    <!-- Repeat the same blocks for Weekday 3–6 -->
+    </array>
+    
+    <!-- Ensure timezone -->
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>TZ</key><string>Europe/Brussels</string>
+      <key>PYTHONPATH</key><string>/Users/greg/Applications/HTTrader</string>
+    </dict>
+
+    <key>RunAtLoad</key><false/>
+    <key>StandardOutPath</key><string>/Users/greg/Applications/HTTrader/LoadStrategy.out</string>
+    <key>StandardErrorPath</key><string>/Users/greg/Applications/HTTrader/LoadStrategy.err</string>
+  </dict>
+</plist>

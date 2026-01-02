@@ -1,7 +1,7 @@
 {
   "database": {
-    "filename": "app/htibkr.db",
-    "tabledefinitions": "app/dto/table_definitions.sql"
+    "filename": "database/htibkr.db",
+    "tabledefinitions": "table_definitions.sql"
   },
   "IBKR": {
     "HOST": "localhost",
@@ -11,7 +11,7 @@
   "logging": {
     "logpath": "LOG",
     "logname": "HT_TOOLS.log",
-    "loglevel": "INFO",
+    "loglevel": "DEBUG",
     "consolelevel": "INFO",
     "backupcount": 2
   }
