@@ -16,8 +16,10 @@ from app.services.scanner import ScannerService
 from app.services.market import MarketService
 from app.services.order import OrderService
 
-# from app.utils.ordercoordinator import OrderCoordinator
+from app.utils.logger import LoggerManager
 
+# from app.utils.ordercoordinator import OrderCoordinator
+LoggerManager()
 logger = logging.getLogger(__name__)
 tags = []
 all_must_match = False
@@ -32,6 +34,16 @@ def generate_key(length=10) -> str:
 #         order_serv.PlaceBracketOrder(instrument)
 
 def main():
+    all_must_match = False
+    if len(sys.argv) > 1:
+        logger.info(f"Starting with arguments: TAGS = {sys.argv[1]}")
+        tags = sys.argv[1].split(',')
+        if len(sys.argv) > 2:
+            logger.info(f"Starting with arguments: ALL_MATCH {sys.argv[2]}")
+            all_must_match = sys.argv[2].lower() == 'true'
+    else:
+        logger.info("Starting without arguments.")
+        
     strategie_dto = StrategieDTO()
     logger.info("[MAIN] - Starting HT-IBKR-Integrations Application")
     
@@ -88,12 +100,4 @@ def main():
     
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        logger.info(f"Starting with arguments: TAGS = {sys.argv[1]}")
-        tags = sys.argv[1].split(',')
-        if len(sys.argv) > 2:
-            logger.info(f"Starting with arguments: ALL_MATCH {sys.argv[2]}")
-            all_must_match = sys.argv[2].lower() == 'true'
-    else:
-        logger.info("Starting without arguments.")
     main()

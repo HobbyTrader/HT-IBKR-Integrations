@@ -7,7 +7,7 @@ from app.utils.logger import LoggerManager
 from app.data.strategy import Strategy
 from app.dto.strategie_dto import StrategieDTO
 
-
+LoggerManager()
 logger = logging.getLogger(__name__)
 
 def insert_strategy(dto, strategies):
@@ -22,7 +22,13 @@ def insert_strategy(dto, strategies):
         dto.save_strategy(strategy)
        
 
-def main(json_file_path: str):
+def main():
+    logger.info("Starting strategy loader...")
+    if len(sys.argv) != 2:
+        print("Usage: python loadstrategy.py <path_to_json_file>")
+        sys.exit(1)
+        
+    json_file_path = files('app.strategies').joinpath(sys.argv[1])
     strategie_dto = StrategieDTO()
     
     # Load JSON data from the file
@@ -33,11 +39,5 @@ def main(json_file_path: str):
         
     return
     
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python loadstrategy.py <path_to_json_file>")
-        sys.exit(1)
-        
-    json_file_path = files('app.strategies').joinpath(sys.argv[1])
-    
-    main(json_file_path)
+if __name__ == "__main__":    
+    main()
