@@ -28,11 +28,6 @@ def generate_key(length=10) -> str:
     chars = string.ascii_uppercase + string.digits
     return ''.join(secrets.choice(chars) for _ in range(length))
 
-# def fire_generate_orders(instrument, clientId=None):
-#     order_service = OrderService(clientId) if clientId is not None else OrderService()
-#     with order_service as order_serv:
-#         order_serv.PlaceBracketOrder(instrument)
-
 def main():
     all_must_match = False
     if len(sys.argv) > 1:
@@ -88,7 +83,7 @@ def main():
             if(instrument.is_candidate):                
                 # Place orders for the candidates (specify any clientId if needed to separate order streams)
                 with OrderService(1) as order_serv:
-                    order_serv.PlaceBracketOrder(instrument)
+                    order_serv.place_bracket_order(instrument)
                     
                 instrument_candidates.append(instrument)
                 

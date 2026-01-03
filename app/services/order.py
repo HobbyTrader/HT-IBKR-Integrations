@@ -3,7 +3,6 @@ import logging
 import threading
 
 from app.data.instrument import Instrument
-from app.data.strategy import Strategy
 from app.data.market_order import MarketOrder
 
 from app.dto.market_order_dto import MarketOrderDTO
@@ -20,22 +19,26 @@ class OrderService(IBApiConnector):
         super().__init__()
         self.order_events = {}
         self.CLIENT_ID = clientId
+        self.order_dto = MarketOrderDTO()
         logger.info(f"[OrderService] - Order initialzed - Client ID: {clientId}")
         
     def store_order(self, order: Order, instrument: Instrument):
-        order_dto = MarketOrderDTO()
         market_order = MarketOrder()
         market_order.from_order(order, instrument)
         
-        logger.info(f"[OrderService] - START - Stored order in DB: {market_order}" )
+        logger.debug(f"[OrderService] - START - Stored order in DB: {market_order}" )
         
         t = threading.Thread(
-            target=order_dto.save_market_order, args=(market_order,)
+            target=self.order_dto.save_market_order, 
+            args=(market_order,)
         )
         t.start()
         
-        logger.info(f"[OrderService] - Stored order in DB: {market_order}" )
+        logger.debug(f"[OrderService] - Stored order in DB: {market_order}" )
     
+    # ============================================================================
+    # IBKR WRAPPER CALLBACKS
+    # ============================================================================
     @iswrapper  
     def nextValidId(self, orderId: int):
         super().nextValidId(orderId)
@@ -46,7 +49,12 @@ class OrderService(IBApiConnector):
     def openOrder(self, orderId, contract, order, orderState):
         logger.info(f"[OrderService] - Open Order. orderId: {orderId}, contract: {contract}, order: {order}, orderState: {orderState}.")
         
-        # TODO: Add order in database for watcher
+        t = threading.Thread(
+            target=self.order_dto.update_market_order_status,
+            args=(orderId, orderState.status)
+        )
+        t.start()
+        
         return super().openOrder(orderId, contract, order, orderState)
     
     @iswrapper
@@ -56,11 +64,21 @@ class OrderService(IBApiConnector):
         super().orderStatus(orderId, status, filled, remaining, avgFillPrice,
                                   permId, parentId, lastFillPrice, clientId,
                                   whyHeld, mktCapPrice)
+        
+        t = threading.Thread(
+            target=self.order_dto.update_market_order_status,
+            args=(orderId, status)
+        )
+        t.start()
+        
         # Mark order as confirmed (Submitted/Filled/PreSubmitted)
         if orderId in self.order_events and status in ['Submitted', 'Filled', 'PreSubmitted']:
             self.order_events[orderId].set()  # Signal completion
             logger.debug(f"Order {orderId} confirmed: {status}")
     
+    # ============================================================================
+    # ORDER CREATION METHODS
+    # ============================================================================
     def create_parent_order_MKT(self, orderId: int, quantity: int) -> Order:
         parent = Order()
         parent.orderId = orderId
@@ -107,9 +125,12 @@ class OrderService(IBApiConnector):
         #to activate all its predecessors
         stopLoss.transmit = True
         return stopLoss
-       
-    # Create Braket Order
-    def PlaceBracketOrder(self,
+    
+    # ============================================================================
+    # PUBLIC METHODS
+    # ============================================================================
+    # Create Bracket Order
+    def place_bracket_order(self,
         instrument: Instrument):
         events = []
         # Define quantity based on strategy and on volume exchanged
@@ -165,5 +186,8 @@ class OrderService(IBApiConnector):
         for order_id in [parentOrder.orderId, stopLossOrder.orderId, targetOrder.orderId]:
             self.order_events.pop(order_id, None)
 
-        
+    def get_active_orders(self):
+        # Placeholder for fetching active orders from IBKR
+        logger.info("[OrderService] - Fetching active orders...")
+        self.reqAllOpenOrders() 
         
