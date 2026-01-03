@@ -54,14 +54,11 @@ def get_strategies(tags: List[str], all_must_match: bool, strategy_dto: Optional
     else:
         return strategy_dto.get_active_strategies()
     
-def get_scanner_results(strategy: Strategy, exec_key: str, scanner_dto: Optional[ScannerDTO] = None) -> List[Instrument]:
-    if scanner_dto is None:
-        scanner_dto = ScannerDTO()
-        
+def get_scanner_results(strategy: Strategy, exec_key: str) -> List[Instrument]:        
     with ScannerService(strategy.id, exec_key) as scanner_serv:
-        scanner_serv.get_scanner_result(strategy)
+        instruments = scanner_serv.get_scanner_result(strategy)
     
-    return scanner_dto.get_instruments_by_exec_key(exec_key)
+    return instruments
 
 def get_instrument_market_data(instrument: Instrument) -> None:
     with MarketService(instrument) as market_serv:
@@ -92,8 +89,15 @@ def main():
         exec_key = generate_key()
         logger.info(f"STRATEGY - {strategy.id} {strategy.name} - EXEC KEY - {exec_key}")
         
+        # TODO: Add check on opening hours of the strategy to skip if outside allowed time
+        # TODO: Add check on max trades per day already placed and keep track of trades placed today
+        # TODO: Add final check on open positions to close them before market close
+        # TODO: Review stop loss order if price gap up during the day. See details in strategy.
+        # TODO: Add current open order status check to avoid placing duplicate orders
+        # TODO: Add cleanup of scanner table for the non candidates after processing
+        
         # Get scanner market data
-        scanner_results = get_scanner_results(strategy, exec_key, scanner_dto)
+        scanner_results = get_scanner_results(strategy, exec_key)
             
         for instrument in scanner_results:
             logger.info(f"SCANNER RESULT - {instrument}")
@@ -119,6 +123,5 @@ def main():
                 
     logger.info("HT-IBKR-Integrations Application Finished")
     
-
 if __name__ == "__main__":
     main()

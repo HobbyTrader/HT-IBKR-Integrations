@@ -76,6 +76,21 @@ class OrderService(IBApiConnector):
             self.order_events[orderId].set()  # Signal completion
             logger.debug(f"Order {orderId} confirmed: {status}")
     
+    @iswrapper
+    def completedOrder(self, contract, order, orderState):
+        logger.info(f"[OrderService] - Completed Order. contract: {contract}, order: {order}, orderState: {orderState}.")
+        t = threading.Thread(
+            target=self.order_dto.update_market_order_status,
+            args=(order.orderId, orderState.status)
+        )
+        t.start()
+        return super().completedOrder(contract, order, orderState)
+    
+    @iswrapper
+    def completedOrdersEnd(self):
+        logger.info(f"[OrderService] - Completed Orders End.")
+        return super().completedOrdersEnd()
+    
     # ============================================================================
     # ORDER CREATION METHODS
     # ============================================================================
@@ -190,4 +205,9 @@ class OrderService(IBApiConnector):
         # Placeholder for fetching active orders from IBKR
         logger.info("[OrderService] - Fetching active orders...")
         self.reqAllOpenOrders() 
+        
+    def get_comlpeted_orders(self):
+        # Placeholder for fetching completed orders from IBKR
+        logger.info("[OrderService] - Fetching completed orders...")
+        self.reqCompletedOrders()
         
