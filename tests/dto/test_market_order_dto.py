@@ -73,6 +73,14 @@ class TestMarketOrderDTO(unittest.TestCase):
             "SELECT * FROM market_orders WHERE strategy_id = ?", (7,)
         )
         self.assertEqual(out, [("r1",)])
+        
+    def test_get_market_orders_by_strategy_today(self):
+        self.mock_cursor.fetchall.return_value = [("r1",)]
+        out = self.dto.get_market_orders_by_strategy_today(7)
+        self.mock_cursor.execute.assert_called_once_with(
+            "SELECT * FROM market_orders WHERE strategy_id = ? AND DATE(create_date) = DATE('now')", (7,)
+        )
+        self.assertEqual(out, [("r1",)])
 
     def test_get_market_orders_by_status(self):
         self.mock_cursor.fetchall.return_value = [("r1",)]

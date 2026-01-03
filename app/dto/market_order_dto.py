@@ -57,6 +57,12 @@ class MarketOrderDTO:
         rows = cursor.fetchall()
         return rows 
     
+    def get_market_orders_by_strategy_today(self, strategy_id):
+        cursor = self.dbconn.conn.cursor()
+        cursor.execute("SELECT * FROM market_orders WHERE strategy_id = ? AND DATE(create_date) = DATE('now')", (strategy_id,))
+        rows = cursor.fetchall()
+        return rows 
+    
     def get_market_orders_by_status(self, order_status):
         cursor = self.dbconn.conn.cursor()
         cursor.execute("SELECT * FROM market_orders WHERE order_status = ?", (order_status,))

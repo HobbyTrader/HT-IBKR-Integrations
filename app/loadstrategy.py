@@ -1,7 +1,9 @@
+from dataclasses import dataclass
 import sys
 import json
 import logging
 from importlib.resources import files
+from typing import List
 
 from app.utils.logger import LoggerManager
 from app.data.strategy import Strategy
@@ -10,6 +12,19 @@ from app.dto.strategy_dto import StrategyDTO
 LoggerManager()
 logger = logging.getLogger(__name__)
 
+@dataclass(frozen=True)
+class LoadStrategyArguments:
+    filename: str
+    
+def get_arguments() -> LoadStrategyArguments:
+    if len(sys.argv) < 2:
+        logger.error("No file path provided")
+        print("Usage: loadstrategy <path_to_json_file>")
+        return None
+    filename = sys.argv[1]
+    
+    return LoadStrategyArguments(filename=filename)
+    
 def insert_strategy(dto, strategies):
     for strategy_json in strategies.get("strategies", []):
         logger.info(f"STRATEGY - {strategy_json}")
@@ -32,11 +47,10 @@ def main(json_file_path: str = None):
     
     # If no path provided, try to get from command-line arguments
     if json_file_path is None:
-        if len(sys.argv) < 2:
-            logger.error("No file path provided")
-            print("Usage: loadstrategy <path_to_json_file>")
+        args = get_arguments()
+        if args is None:
             return sys.exit(1)
-        json_file_path = sys.argv[1]
+        json_file_path = args.filename
     
     # Resolve file path from package resources
     if not json_file_path.startswith('/'):
