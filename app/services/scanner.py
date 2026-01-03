@@ -1,5 +1,6 @@
 import time
 import logging
+import threading
 
 from app.utils.ibapiconnector import IBApiConnector
 from app.dto.scanner_dto import ScannerDTO
@@ -14,6 +15,7 @@ class ScannerService(IBApiConnector):
         super().__init__()
         self.scanner_dto = ScannerDTO(strategy_id)
         self.exec_key = exec_key
+        self.scanner_result_event = {}
         logger.debug("[ScannerService] - Scanner initialzed")
 
     @iswrapper
@@ -28,8 +30,10 @@ class ScannerService(IBApiConnector):
        
     @iswrapper
     def scannerDataEnd(self, reqId):
+        event = self.scanner_result_event.get(reqId)
+        if event:
+            event.set()
         logger.debug(f"[ScannerService] - ScannerDataEnd. reqId: {reqId}.")
-        # self.scanner_dto.finalize_request(reqId)
         
     def get_parameters(self):
         self.reqScannerParameters()
@@ -37,10 +41,16 @@ class ScannerService(IBApiConnector):
 
     def get_scanner_result(self, strategy: Strategy):
         logger.debug("[ScannerService] - Scanner Data requested")
+        evt = threading.Event()
         scannerSubscription = strategy.details.to_scannerSubscription()
         scannerOptions = strategy.details.to_scannerOptions()
         filterTagValues = strategy.details.to_tagValueList()
-        self.reqScannerSubscription(self.nextId(), scannerSubscription, scannerOptions, filterTagValues)
-        time.sleep(5)
+        request_id = self.nextId()
+        self.reqScannerSubscription(request_id, scannerSubscription, scannerOptions, filterTagValues)
+        
+        evt.wait(timeout=10)
+        self.scanner_result_event.pop(request_id, None)
+        
+        return self.scanner_dto.get_instruments_by_exec_key(self.exec_key)
 
     

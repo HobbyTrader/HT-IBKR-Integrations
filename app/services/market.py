@@ -18,7 +18,10 @@ class MarketService(IBApiConnector):
         self.instrument = instrument
         self.Historical_events = {}
         logger.debug("[MarketService] - Market initialzed")
-        
+    
+    # ============================================================================
+    # IBKR WRAPPER CALLBACKS
+    # ============================================================================    
     @iswrapper  
     def realtimeBar(self, reqId: int, time: int, open_: float, high: float, low: float, close: float, volume: int, wap: float, count: int):
         logger.debug(f"[MarketService] - RealtimeBar. reqId: {reqId}, time: {time}, open: {open_}, high: {high}, low: {low}, close: {close}, volume: {volume}, wap: {wap}, count: {count}.")
@@ -36,7 +39,10 @@ class MarketService(IBApiConnector):
         if event:
             event.set()
         logger.debug(f"[MarketService] - HistoricalDataEnd. reqId: {reqId}, start: {start}, end: {end}.")
-        
+    
+    # ============================================================================
+    # PUBLIC METHODS
+    # ============================================================================    
     def get_realtime_bars(self, contract: Contract):
         logger.debug("[MarketService] - Realtime Bars requested")
         self.reqHistoricalData(self.nextId(), contract,"", "1 D", "30 secs", "TRADES",1,1, False, [])

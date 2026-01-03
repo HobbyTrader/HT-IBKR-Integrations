@@ -5,7 +5,7 @@ from importlib.resources import files
 
 from app.utils.logger import LoggerManager
 from app.data.strategy import Strategy
-from app.dto.strategie_dto import StrategieDTO
+from app.dto.strategy_dto import StrategyDTO
 
 LoggerManager()
 logger = logging.getLogger(__name__)
@@ -22,22 +22,33 @@ def insert_strategy(dto, strategies):
         dto.save_strategy(strategy)
        
 
-def main():
+def main(json_file_path: str = None):
+    """Load strategies from JSON file.
+    
+    Args:
+        json_file_path: Optional path to JSON file. If not provided, uses sys.argv[1].
+    """
     logger.info("Starting strategy loader...")
-    if len(sys.argv) != 2:
-        print("Usage: python loadstrategy.py <path_to_json_file>")
-        sys.exit(1)
-        
-    json_file_path = files('app.strategies').joinpath(sys.argv[1])
-    strategie_dto = StrategieDTO()
+    
+    # If no path provided, try to get from command-line arguments
+    if json_file_path is None:
+        if len(sys.argv) < 2:
+            logger.error("No file path provided")
+            print("Usage: loadstrategy <path_to_json_file>")
+            return sys.exit(1)
+        json_file_path = sys.argv[1]
+    
+    # Resolve file path from package resources
+    if not json_file_path.startswith('/'):
+        json_file_path = files('app.strategies').joinpath(json_file_path)
+    
+    strategy_dto = StrategyDTO()
     
     # Load JSON data from the file
     with open(json_file_path, 'r') as file:
         strategies = json.load(file)
-        logger.info(f"Loaded {len(strategies)} strategies from {json_file_path} - {strategies}")
-        insert_strategy(strategie_dto, strategies)
-        
-    return
+        logger.info(f"Loaded {len(strategies.get('strategies', []))} strategies from {json_file_path}")
+        insert_strategy(strategy_dto, strategies)
     
 if __name__ == "__main__":    
     main()

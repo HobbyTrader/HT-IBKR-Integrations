@@ -3,7 +3,6 @@ import logging
 import threading
 
 from app.data.instrument import Instrument
-from app.data.strategy import Strategy
 from app.data.market_order import MarketOrder
 
 from app.dto.market_order_dto import MarketOrderDTO
@@ -20,22 +19,26 @@ class OrderService(IBApiConnector):
         super().__init__()
         self.order_events = {}
         self.CLIENT_ID = clientId
+        self.order_dto = MarketOrderDTO()
         logger.info(f"[OrderService] - Order initialzed - Client ID: {clientId}")
         
     def store_order(self, order: Order, instrument: Instrument):
-        order_dto = MarketOrderDTO()
         market_order = MarketOrder()
         market_order.from_order(order, instrument)
         
-        logger.info(f"[OrderService] - START - Stored order in DB: {market_order}" )
+        logger.debug(f"[OrderService] - START - Stored order in DB: {market_order}" )
         
         t = threading.Thread(
-            target=order_dto.save_market_order, args=(market_order,)
+            target=self.order_dto.save_market_order, 
+            args=(market_order,)
         )
         t.start()
         
-        logger.info(f"[OrderService] - Stored order in DB: {market_order}" )
+        logger.debug(f"[OrderService] - Stored order in DB: {market_order}" )
     
+    # ============================================================================
+    # IBKR WRAPPER CALLBACKS
+    # ============================================================================
     @iswrapper  
     def nextValidId(self, orderId: int):
         super().nextValidId(orderId)
@@ -46,7 +49,12 @@ class OrderService(IBApiConnector):
     def openOrder(self, orderId, contract, order, orderState):
         logger.info(f"[OrderService] - Open Order. orderId: {orderId}, contract: {contract}, order: {order}, orderState: {orderState}.")
         
-        # TODO: Add order in database for watcher
+        t = threading.Thread(
+            target=self.order_dto.update_market_order_status,
+            args=(orderId, orderState.status)
+        )
+        t.start()
+        
         return super().openOrder(orderId, contract, order, orderState)
     
     @iswrapper
@@ -56,46 +64,56 @@ class OrderService(IBApiConnector):
         super().orderStatus(orderId, status, filled, remaining, avgFillPrice,
                                   permId, parentId, lastFillPrice, clientId,
                                   whyHeld, mktCapPrice)
+        
+        t = threading.Thread(
+            target=self.order_dto.update_market_order_status,
+            args=(orderId, status)
+        )
+        t.start()
+        
         # Mark order as confirmed (Submitted/Filled/PreSubmitted)
         if orderId in self.order_events and status in ['Submitted', 'Filled', 'PreSubmitted']:
             self.order_events[orderId].set()  # Signal completion
             logger.debug(f"Order {orderId} confirmed: {status}")
-        
-       
-    # Create Braket Order
-    def PlaceBracketOrder(self,
-        instrument: Instrument):
-        events = []
-        # Define quantity based on strategy and on volume exchanged
-        quantity = int(instrument.volume_buy)
-        
-        contract = instrument.to_contract()
-        parentOrderId = self.nextId()
-
-        #This will be our main or “parent” order
+    
+    @iswrapper
+    def completedOrder(self, contract, order, orderState):
+        logger.info(f"[OrderService] - Completed Order. contract: {contract}, order: {order}, orderState: {orderState}.")
+        t = threading.Thread(
+            target=self.order_dto.update_market_order_status,
+            args=(order.orderId, orderState.status)
+        )
+        t.start()
+        return super().completedOrder(contract, order, orderState)
+    
+    @iswrapper
+    def completedOrdersEnd(self):
+        logger.info(f"[OrderService] - Completed Orders End.")
+        return super().completedOrdersEnd()
+    
+    # ============================================================================
+    # ORDER CREATION METHODS
+    # ============================================================================
+    def create_parent_order_MKT(self, orderId: int, quantity: int) -> Order:
         parent = Order()
-        parent.orderId = parentOrderId
+        parent.orderId = orderId
         parent.action = "BUY"
-        # Buy market price!!!
         parent.orderType = "MKT"
-        
-        # Buy at Limit price
-        # parent.orderType = "LMT"
-        # parent.lmtPrice = instrument.market_price  # Placeholder for buy price
-        
-        # Define quantity from the strategy
         parent.totalQuantity = quantity
-        #The parent and children orders will need this attribute set to False to prevent accidental executions.
-        #The LAST CHILD will have it set to True,
         parent.transmit = False
-        buy_events = threading.Event()
-        self.order_events[parent.orderId] = buy_events
-        events.append(buy_events)
-        
-        self.store_order(parent, instrument)
-        
-        self.placeOrder(parent.orderId, contract, parent)
-
+        return parent   
+    
+    def create_parent_order_LMT(self, orderId: int, instrument: Instrument, quantity: int) -> Order:
+        parent = Order()
+        parent.orderId = orderId
+        parent.action = "BUY"
+        parent.orderType = "LMT"
+        parent.lmtPrice = instrument.market_price  # Placeholder for buy price
+        parent.totalQuantity = quantity
+        parent.transmit = False
+        return parent   
+    
+    def create_target_order_LMT(self, instrument: Instrument, quantity: int, parentOrderId: int) -> Order:
         takeProfit = Order()
         takeProfit.orderId = self.nextId()
         takeProfit.action = "SELL"
@@ -106,15 +124,9 @@ class OrderService(IBApiConnector):
         takeProfit.lmtPrice = instrument.take_profit_price  # Placeholder for buy price
         takeProfit.parentId = parentOrderId
         takeProfit.transmit = False
-        
-        target_events = threading.Event()
-        self.order_events[takeProfit.orderId] = target_events
-        events.append(target_events)
-        
-        self.store_order(takeProfit, instrument)
-        
-        self.placeOrder(takeProfit.orderId, contract, takeProfit)
-
+        return takeProfit
+    
+    def create_stop_order_STP(self, instrument: Instrument, quantity: int, parentOrderId: int) -> Order:
         stopLoss = Order()
         stopLoss.orderId = self.nextId()
         stopLoss.action = "SELL"
@@ -127,14 +139,50 @@ class OrderService(IBApiConnector):
         #In this case, the low side order will be the last child being sent. Therefore, it needs to set this attribute to True
         #to activate all its predecessors
         stopLoss.transmit = True
+        return stopLoss
+    
+    # ============================================================================
+    # PUBLIC METHODS
+    # ============================================================================
+    # Create Bracket Order
+    def place_bracket_order(self,
+        instrument: Instrument):
+        events = []
+        # Define quantity based on strategy and on volume exchanged
+        quantity = int(instrument.volume_buy)
+        
+        contract = instrument.to_contract()
+        parentOrderId = self.nextId()
+
+        #This will be our main or “parent” order with MKT type
+        parentOrder = self.create_parent_order_MKT(parentOrderId, quantity)
+        
+        # This will be our main or “parent” order with LMT type (not used for the moment)
+        # parent = self.create_parent_order_LMT(parentOrderId, instrument, quantity)
+        
+        buy_events = threading.Event()
+        self.order_events[parentOrder.orderId] = buy_events
+        events.append(buy_events)        
+        self.store_order(parentOrder, instrument)        
+        self.placeOrder(parentOrder.orderId, contract, parentOrder)
+
+        #This will be our “take profit” order, a LMT order to sell at a higher price
+        targetOrder = self.create_target_order_LMT(instrument, quantity, parentOrderId)
+        
+        target_events = threading.Event()
+        self.order_events[targetOrder.orderId] = target_events
+        events.append(target_events)        
+        self.store_order(targetOrder, instrument)        
+        self.placeOrder(targetOrder.orderId, contract, targetOrder)
+        
+        #This will be our “stop loss” order, a STP order to sell at a lower price
+        stopLossOrder = self.create_stop_order_STP(instrument, quantity, parentOrderId)
         
         stop_events = threading.Event()
-        self.order_events[stopLoss.orderId] = stop_events
-        events.append(stop_events)
-        
-        self.store_order(stopLoss, instrument)
-        
-        self.placeOrder(stopLoss.orderId, contract, stopLoss)
+        self.order_events[stopLossOrder.orderId] = stop_events
+        events.append(stop_events)        
+        self.store_order(stopLossOrder, instrument)        
+        self.placeOrder(stopLossOrder.orderId, contract, stopLossOrder)
         
         # Wait for ALL 3 orders to be confirmed (10s timeout each)
         logger.info("Waiting for all 3 orders to be confirmed...")
@@ -150,8 +198,16 @@ class OrderService(IBApiConnector):
                 # raise TimeoutError("Order confirmation timeout")
                 
         # Cleanup
-        for order_id in [parent.orderId, stopLoss.orderId, takeProfit.orderId]:
+        for order_id in [parentOrder.orderId, stopLossOrder.orderId, targetOrder.orderId]:
             self.order_events.pop(order_id, None)
 
+    def get_active_orders(self):
+        # Placeholder for fetching active orders from IBKR
+        logger.info("[OrderService] - Fetching active orders...")
+        self.reqAllOpenOrders() 
         
+    def get_comlpeted_orders(self):
+        # Placeholder for fetching completed orders from IBKR
+        logger.info("[OrderService] - Fetching completed orders...")
+        self.reqCompletedOrders()
         

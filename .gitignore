@@ -29,7 +29,8 @@ sdist/
 var/
 wheels/
 share/python-wheels/
-*.egg-info/
+# *.egg-info/
+ht_ibkr_integrations.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
