@@ -5,7 +5,7 @@ from importlib.resources import files
 
 from app.utils.logger import LoggerManager
 from app.data.strategy import Strategy
-from app.dto.strategie_dto import StrategieDTO
+from app.dto.strategy_dto import StrategieDTO
 
 LoggerManager()
 logger = logging.getLogger(__name__)
