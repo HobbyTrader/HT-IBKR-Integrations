@@ -3,7 +3,7 @@ import logging
 
 from typing import List, Any
 from dataclasses import dataclass, asdict, field
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 from ibapi.scanner import ScannerSubscription
 from ibapi.tag_value import TagValue
@@ -40,6 +40,7 @@ class StrategyDetail:
     opening_hours : List[str] = field(default_factory=list)
     open_hour : time = None
     close_hour : time = None
+    sell_minutes_before_close: int = 30
     open_days: List[str] = field(default_factory = lambda: ["MON", "TUE", "WED", "THU", "FRI"])
     min_open_trade_gap_percentage: float = 0.0
     max_open_trade_gap_percentage: float = 0.0
@@ -188,4 +189,15 @@ class Strategy:
             logger.info(f"[Strategy] - Current time {current_time} is outside of market hours ({opening_time} - {closing_time}) for strategy {self.name}.")
             return False
         
+    def is_time_to_sell_before_close(self) -> bool:
+        """Check if it's time to sell before market close based on strategy settings."""
+        now = datetime.now()
+        current_time = now.time()
         
+        sell_time = (datetime.combine(now.date(), self.details.close_hour) - 
+                     timedelta(minutes=self.details.sell_minutes_before_close)).time()
+        
+        if current_time >= sell_time:
+            logger.info(f"[Strategy] - It's time to sell before market close for strategy {self.name}. Current time: {current_time}, Sell time: {sell_time}")
+            return True
+        return False    

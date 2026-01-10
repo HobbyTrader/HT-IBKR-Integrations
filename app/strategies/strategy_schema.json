@@ -186,6 +186,11 @@
                                 "description": "Percentage threshold to consider increasing position in a candidate (e.g., 0.8 for 0.8%)",
                                 "minimum": 0,
                                 "maximum": 100
+                            },
+                            "sell_minutes_before_close": {
+                                "type": "integer",
+                                "description": "Minutes before market close to sell positions",
+                                "minimum": 0
                             }
                         }
                     }
