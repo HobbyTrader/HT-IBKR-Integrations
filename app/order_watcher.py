@@ -30,31 +30,66 @@ def get_arguments() -> WatcherArguments:
     
     return WatcherArguments(tags=tags, all_must_match=all_must_match)
 
+def get_orders_by_strategy(orders: List, strategy_id: int):
+    """Get all orders for a specific strategy."""
+    return [order for order in orders if order.strategy_id == strategy_id]
+
+def get_orders_by_status(orders: List, status: str):
+    """Get all orders with a specific status."""
+    return [order for order in orders if order.order_status == status]
+
+def get_orders_by_status(orders: List, statuses: List[str]):
+    """Get all orders with any of the specified statuses.
+    
+    Args:
+        orders: List of MarketOrder objects
+        statuses: List of status strings to filter by (e.g., ["NEW", "OPEN", "PARTIALLY_FILLED"])
+    
+    Returns:
+        List of orders matching any of the provided statuses
+    """
+    return [order for order in orders if order.order_status in statuses]
+
 def main():
     strategy_dto = StrategyDTO()
     market_order_dto = MarketOrderDTO()
+    logger.info("Order watcher started")
     
     args = get_arguments()
     strategies = strategy_dto.get_strategies_by_tags(args.tags, args.all_must_match)
     
-    for strategy in strategies:
-        # TODO : If outside market hours, skip watching and exit
-        logger.info(f"Watching strategy: {strategy.name} (ID: {strategy.id})")
-        orders_today = market_order_dto.get_market_orders_by_strategy_today(strategy.id)
+    full_orders_from_DB = [
+        order
+        for strategy in strategies
+        for order in market_order_dto.get_market_orders_by_strategy_today(strategy.id)
+    ]
     
-    logger.info("Order watcher started")
+    logger.info(f"Found {len(full_orders_from_DB)} orders to watch for strategies with tags {args.tags}")    
     
     while True:
         # Placeholder for order watching logic
         logger.info("Watching orders...")
-        # TODO: Implement order checking and processing logic here
         
+        for strategy in strategies:
+            # Don't check orders if market is already closed
+            check_market_hours = strategy.is_market_open_now()
+            if not check_market_hours:
+                logger.info(f"Market is closed for strategy {strategy.name}. Skipping order checks.")
+                break
+            
+            # Cancel orders and SELL everything before market close?
+            # TODO : Get market close hour from strategy details
+            
+            strategy_orders = get_orders_by_strategy(full_orders_from_DB, strategy.id)
+            logger.info(f"Strategy {strategy.name} has {len(strategy_orders)} orders today.")
+            
+            # TODO : Implement logic to check order statuses via IBKR API   
+                
         # TODO : Get all openned orders and refresh their status (Only 1 call to IBKR API for all orders!!!!!!). can wait for the multiple callbacks
         # TODO : For each openned order, check if it needs to be modified or cancelled
         # TODO : For each openned order, check if it has been filled and update positions accordingly
         
-        # Sleep for a defined interval before checking again
-        
+        # Sleep for a defined interval before checking again        
         # TODO : Get sleeping time from config
         time.sleep(300)  # Sleep for 5 minutes
         
