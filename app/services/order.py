@@ -10,7 +10,10 @@ from app.dto.market_order_dto import MarketOrderDTO
 from app.utils.ibapiconnector import IBApiConnector
 
 from ibapi.utils import iswrapper
-from ibapi.order import Order   
+from ibapi.order import Order
+from ibapi.contract import Contract
+from ibapi.order_cancel import OrderCancel
+from decimal import Decimal
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +23,8 @@ class OrderService(IBApiConnector):
         self.order_events = {}
         self.CLIENT_ID = clientId
         self.order_dto = MarketOrderDTO()
+        self.positions = {}  # Store positions: {(account, symbol): {'contract': Contract, 'position': Decimal, 'avgCost': float}}
+        self.positions_received = threading.Event()
         logger.info(f"[OrderService] - Order initialzed - Client ID: {clientId}")
         
     def store_order(self, order: Order, instrument: Instrument):
@@ -210,4 +215,99 @@ class OrderService(IBApiConnector):
         # Placeholder for fetching completed orders from IBKR
         logger.info("[OrderService] - Fetching completed orders...")
         self.reqCompletedOrders()
+    
+    # ============================================================================
+    # POSITION TRACKING CALLBACKS
+    # ============================================================================
+    @iswrapper
+    def position(self, account: str, contract: Contract, position: Decimal, avgCost: float):
+        """Callback for receiving position data."""
+        logger.info(f"[OrderService] - Position. account: {account}, symbol: {contract.symbol}, position: {position}, avgCost: {avgCost}")
+        key = (account, contract.symbol)
+        self.positions[key] = {
+            'contract': contract,
+            'position': position,
+            'avgCost': avgCost
+        }
+        return super().position(account, contract, position, avgCost)
+    
+    @iswrapper
+    def positionEnd(self):
+        """Callback indicating all positions have been received."""
+        logger.info(f"[OrderService] - Position End. Total positions: {len(self.positions)}")
+        self.positions_received.set()
+        return super().positionEnd()
+    
+    # ============================================================================
+    # ORDER CANCELLATION AND POSITION LIQUIDATION
+    # ============================================================================
+    def cancel_all_open_orders(self):
+        """Cancel all open orders using IBKR's global cancel."""
+        logger.info("[OrderService] - Cancelling all open orders...")
+        order_cancel = OrderCancel()
+        self.reqGlobalCancel(order_cancel)
+        logger.info("[OrderService] - Global cancel order sent to IBKR.")
+    
+    def get_all_positions(self, timeout: float = 10.0) -> dict:
+        """Request and return all current positions."""
+        logger.info("[OrderService] - Requesting all positions...")
+        self.positions.clear()
+        self.positions_received.clear()
+        
+        self.reqPositions()
+        
+        # Wait for positions to be received
+        if self.positions_received.wait(timeout=timeout):
+            logger.info(f"[OrderService] - Received {len(self.positions)} positions.")
+            return self.positions.copy()
+        else:
+            logger.warning(f"[OrderService] - Timeout waiting for positions after {timeout} seconds.")
+            return self.positions.copy()
+    
+    def sell_all_positions(self):
+        """Create market sell orders for all open positions."""
+        logger.info("[OrderService] - Selling all positions...")
+        positions = self.get_all_positions()
+        
+        if not positions:
+            logger.info("[OrderService] - No positions to sell.")
+            return
+        
+        for key, pos_data in positions.items():
+            account, symbol = key
+            position_size = pos_data['position']
+            contract = pos_data['contract']
+            
+            # Only sell long positions (position > 0)
+            if position_size > 0:
+                logger.info(f"[OrderService] - Creating sell order for {symbol}, quantity: {position_size}")
+                
+                # Create market sell order
+                sell_order = Order()
+                sell_order.orderId = self.nextId()
+                sell_order.action = "SELL"
+                sell_order.orderType = "MKT"
+                sell_order.totalQuantity = float(position_size)
+                sell_order.transmit = True
+                
+                # Place the order
+                self.placeOrder(sell_order.orderId, contract, sell_order)
+                logger.info(f"[OrderService] - Placed sell order {sell_order.orderId} for {symbol}")
+            else:
+                logger.debug(f"[OrderService] - Skipping {symbol} (position: {position_size})")
+    
+    def cancel_orders_and_sell_positions(self):
+        """Cancel all open orders and sell all positions."""
+        logger.info("[OrderService] - Starting cancel orders and sell positions...")
+        
+        # Step 1: Cancel all open orders
+        self.cancel_all_open_orders()
+        
+        # Wait a moment for cancellations to process
+        time.sleep(2)
+        
+        # Step 2: Sell all positions
+        self.sell_all_positions()
+        
+        logger.info("[OrderService] - Cancel orders and sell positions completed.")
         
