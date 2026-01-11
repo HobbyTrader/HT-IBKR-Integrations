@@ -37,11 +37,12 @@ CREATE TABLE IF NOT EXISTS market_orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     order_id INTEGER,
     strategy_id INTEGER NOT NULL,
-    order_details TEXT NOT NULL,
+    order_contract_id INTEGER NOT NULL,
+    order_symbol TEXT NOT NULL,
     order_status TEXT NOT NULL,
     order_quantity INTEGER NOT NULL DEFAULT 0,
     order_currency TEXT NOT NULL, -- USD, EUR, etc. vient de l'instrument
-    order_price REAL NOT NULL,
+    order_price REAL,
     order_type TEXT NOT NULL,
     order_action TEXT NOT NULL,
     order_parent_id INTEGER DEFAULT 0,
@@ -50,3 +51,21 @@ CREATE TABLE IF NOT EXISTS market_orders (
     FOREIGN KEY (strategy_id) REFERENCES strategies(strategy_id)
 );
 
+-- Table des exécutions d'ordres
+-- Permet de suivre les exécutions des ordres passés
+-- Utile pour le calcul des PnL et le suivi des positions
+CREATE TABLE IF NOT EXISTS executions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    exec_id TEXT NOT NULL,
+    order_id INTEGER NOT NULL,
+    symbol TEXT NOT NULL,
+    sec_type TEXT NOT NULL,
+    side TEXT NOT NULL,
+    currency TEXT NOT NULL,
+    shares REAL NOT NULL,
+    price REAL NOT NULL,
+    execution_time TIMESTAMP NOT NULL,
+    create_date  TEXT NOT NULL DEFAULT (datetime('now')),
+    update_date  TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (order_id) REFERENCES market_orders(order_id)
+);

@@ -46,14 +46,16 @@ def load_config_ibapi() -> json:
             return json.load(file).get("IBKR", {
             "HOST": "localhost",
             "PORT": 7497,
-            "CLIENTID": "0"
+            "CLIENTID": "0",
+            "ACCOUNTID": "DUMXXXXXX"
         })
     except Exception as e:
         # Fallback config.json if non existing filr in project root
         config_json = {
             "HOST": "localhost",
             "PORT": 7497,
-            "CLIENTID": "0"
+            "CLIENTID": "0",
+            "ACCOUNTID": "DUMXXXXXX"
         }
         return config_json
     

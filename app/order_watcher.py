@@ -77,8 +77,13 @@ def main():
                 logger.info(f"Market is closed for strategy {strategy.name}. Skipping order checks.")
                 break
             
+            # TODO : Add logic to update order statuses via IBKR API
+            
             # Cancel orders and SELL everything before market close?
-            # TODO : Get market close hour from strategy details
+            if(strategy.is_time_to_sell_before_close()):
+                logger.info(f"Time to sell before market close for strategy {strategy.name}. Cancelling orders and selling positions.")
+                # TODO : Implement logic to cancel all open orders and sell all positions via IBKR API
+                continue
             
             strategy_orders = get_orders_by_strategy(full_orders_from_DB, strategy.id)
             logger.info(f"Strategy {strategy.name} has {len(strategy_orders)} orders today.")
