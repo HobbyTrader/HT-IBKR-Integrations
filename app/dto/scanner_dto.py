@@ -64,4 +64,13 @@ class ScannerDTO:
         rows = cursor.fetchall()
         return self.rows_to_instruments(rows)
     
+    def get_contract_id_by_symbol(self, symbol: str) -> int:
+        cursor = self.dbconn.conn.cursor()
+        cursor.execute(
+            "SELECT contract_id FROM scanner_results WHERE contract_symbol = ? LIMIT 1", 
+            (symbol,)
+        )
+        row = cursor.fetchone()
+        return row[0] if row else None
+    
     

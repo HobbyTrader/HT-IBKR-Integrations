@@ -31,13 +31,13 @@ class MarketOrder:
          self.order_status, self.order_quantity, self.order_currency, self.order_price, self.order_type,
          self.order_action, self.order_parent_id) = row
 
-    def from_order(self, order: Order, instrument: Instrument):
+    def from_order(self, order: Order, contract_id: int, symbol:str, strategy_id: int, currency: str):
         self.order_id = order.orderId
-        self.order_contract_id = instrument.contract_id
-        self.order_symbol = instrument.symbol
-        self.strategy_id = instrument.strategy_id
+        self.order_contract_id = contract_id
+        self.order_symbol = symbol
+        self.strategy_id = strategy_id
         self.order_quantity = order.totalQuantity
-        self.order_currency = instrument.currency
+        self.order_currency = currency
         # En fonction de l'ordre, se baser sur limited price ou autre
         self.order_price = order.lmtPrice
         

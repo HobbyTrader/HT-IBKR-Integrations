@@ -2,6 +2,9 @@ import time
 import logging
 import threading
 
+from typing import List
+
+from app.data.instrument import Instrument
 from app.utils.ibapiconnector import IBApiConnector
 from app.dto.scanner_dto import ScannerDTO
 from app.data.strategy import Strategy
@@ -39,7 +42,7 @@ class ScannerService(IBApiConnector):
         self.reqScannerParameters()
         time.sleep(5)
 
-    def get_scanner_result(self, strategy: Strategy):
+    def get_scanner_result(self, strategy: Strategy) -> List[Instrument]:
         logger.debug("[ScannerService] - Scanner Data requested")
         evt = threading.Event()
         scannerSubscription = strategy.details.to_scannerSubscription()

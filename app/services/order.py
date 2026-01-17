@@ -11,6 +11,7 @@ from app.utils.ibapiconnector import IBApiConnector
 
 from ibapi.utils import iswrapper
 from ibapi.order import Order   
+from ibapi.contract import Contract
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ class OrderService(IBApiConnector):
         
     def store_order(self, order: Order, instrument: Instrument):
         market_order = MarketOrder()
-        market_order.from_order(order, instrument)
+        market_order.from_order(order, instrument.id, instrument.symbol, instrument.strategy_id, instrument.currency)
         
         logger.debug(f"[OrderService] - START - Stored order in DB: {market_order}" )
         
@@ -35,6 +36,31 @@ class OrderService(IBApiConnector):
         t.start()
         
         logger.debug(f"[OrderService] - Stored order in DB: {market_order}" )
+        
+    def store_sell_order(self, order: Order, contract: Contract, strategy_id: int):
+        market_order = MarketOrder()
+        market_order.from_order(order, contract.conId, contract.symbol, strategy_id, contract.currency)
+        
+        logger.debug(f"[OrderService] - START - Stored SELL order in DB: {market_order}" )
+        
+        t = threading.Thread(
+            target=self.order_dto.save_market_order, 
+            args=(market_order,)
+        )
+        t.start()
+        
+        logger.debug(f"[OrderService] - Stored SELL order in DB: {market_order}" )
+        
+    def update_order(self, order: Order):
+        logger.debug(f"[OrderService] - START - Update order in DB: {order.orderId}" )
+        
+        t = threading.Thread(
+            target=self.order_dto.update_market_order,
+            args=(order,)
+        )
+        t.start()
+        
+        logger.debug(f"[OrderService] - Update order in DB: {order.orderId}" )
     
     # ============================================================================
     # IBKR WRAPPER CALLBACKS
@@ -146,7 +172,8 @@ class OrderService(IBApiConnector):
     # ============================================================================
     # Create Bracket Order
     def place_bracket_order(self,
-        instrument: Instrument):
+        instrument: Instrument, 
+        contract_id: int=None):
         events = []
         # Define quantity based on strategy and on volume exchanged
         quantity = int(instrument.volume_buy)
@@ -201,6 +228,30 @@ class OrderService(IBApiConnector):
         for order_id in [parentOrder.orderId, stopLossOrder.orderId, targetOrder.orderId]:
             self.order_events.pop(order_id, None)
 
+    def sell_open_position(self, contract: Contract, quantity: int, strategy_id: int):
+        sellOrderId = self.nextId()
+        
+        sellOrder = Order()
+        sellOrder.orderId = sellOrderId
+        sellOrder.action = "SELL"
+        sellOrder.orderType = "MKT"
+        sellOrder.totalQuantity = quantity
+        sellOrder.transmit = True
+        
+        sell_events = threading.Event()
+        self.order_events[sellOrder.orderId] = sell_events   
+        self.placeOrder(sellOrder.orderId, contract, sellOrder)     
+        self.store_sell_order(sellOrder, contract, strategy_id)        
+        
+        logger.info(f"Waiting for sell order {sellOrder.orderId} to be confirmed...")
+        success = sell_events.wait(timeout=10.0)
+        if not success:
+            logger.error(f"Sell order {sellOrder.orderId} timeout!")
+            time.sleep(2)
+        
+        # Cleanup
+        self.order_events.pop(sellOrder.orderId, None)
+
     def get_active_orders(self):
         # Placeholder for fetching active orders from IBKR
         logger.info("[OrderService] - Fetching active orders...")
@@ -210,4 +261,14 @@ class OrderService(IBApiConnector):
         # Placeholder for fetching completed orders from IBKR
         logger.info("[OrderService] - Fetching completed orders...")
         self.reqCompletedOrders()
+        
+    def cancel_all_orders(self):
+        # Placeholder for cancelling all orders in IBKR
+        logger.info("[OrderService] - Cancelling all orders...")
+        self.reqGlobalCancel()
+        
+    def cancel_order_by_id(self, order_id: int):
+        # Placeholder for cancelling specific order in IBKR
+        logger.info(f"[OrderService] - Cancelling order by ID: {order_id}...")
+        self.cancelOrder(order_id)
         

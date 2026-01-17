@@ -37,6 +37,7 @@ class Instrument:
     
     def to_contract(self) -> Contract:
         contract = Contract()
+        contract.conId = self.id
         contract.symbol = self.symbol
         contract.secType = self.sectype
         contract.currency = self.currency

@@ -113,7 +113,7 @@ def main():
             if(instrument.is_candidate):                
                 # Place orders for the candidates (specify any clientId if needed to separate order streams)
                 with OrderService(1) as order_serv:
-                    order_serv.place_bracket_order(instrument)
+                    order_serv.place_bracket_order(instrument, )
                     
                 instrument_candidates.append(instrument)
                 
