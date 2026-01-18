@@ -3,10 +3,12 @@ import logging
 
 from typing import List, Any
 from dataclasses import dataclass, asdict, field
+from datetime import datetime, time
 
-from ibapi.scanner import ScannerSubscription
-from ibapi.tag_value import TagValue
+from vendor.ibapi.scanner import ScannerSubscription
+from vendor.ibapi.tag_value import TagValue
 from app.data.instrument import Instrument
+from app.utils.timeencoder import TimeEncoder
 
 logger = logging.getLogger(__name__)
 
@@ -35,14 +37,16 @@ class StrategyDetail:
     max_trades_per_day: int
     stop_loss_percent: float
     take_profit_percent: float
-    opening_hours : str
+    opening_hours : List[str] = field(default_factory=list)
+    open_hour : time = None
+    close_hour : time = None
     open_days: List[str] = field(default_factory = lambda: ["MON", "TUE", "WED", "THU", "FRI"])
     min_open_trade_gap_percentage: float = 0.0
     max_open_trade_gap_percentage: float = 0.0
     increase_position_candidate_percentage: float = 0.0
     
     def to_json(self) -> str:
-        return json.dumps(asdict(self))
+        return json.dumps(asdict(self), cls=TimeEncoder)
     
     @classmethod
     def from_json(cls, json_str_or_dict):
@@ -53,6 +57,21 @@ class StrategyDetail:
         # Manually convert nested filter_options dicts to FilterOption instances
         filter_opts = [FilterOption(**fo) for fo in data.get('filter_options', [])]
         data['filter_options'] = filter_opts
+        
+        # Parse opening_hours and extract open_hour and close_hour
+        opening_hours = data.get('opening_hours', [])
+        if opening_hours and len(opening_hours) >= 2:
+            try:
+                data['open_hour'] = time.fromisoformat(opening_hours[0])
+                data['close_hour'] = time.fromisoformat(opening_hours[1])
+            except (ValueError, IndexError) as e:
+                logger.error(f"Error parsing opening_hours: {opening_hours}. Error: {e}")
+                data['open_hour'] = None
+                data['close_hour'] = None
+        else:
+            data['open_hour'] = None
+            data['close_hour'] = None
+        
         return cls(**data)
     
     def to_scannerSubscription(self):
@@ -79,7 +98,7 @@ class Strategy:
     updated_at: str = None
     
     def to_json(self) -> str:
-        return json.dumps(asdict(self))
+        return json.dumps(asdict(self), cls=TimeEncoder)
     
     @classmethod
     def from_json(cls, json_str_or_dict):
@@ -115,6 +134,7 @@ class Strategy:
         # Implement actual checks based on strategy details
         if not instrument.daily_history or len(instrument.daily_history) < 4:
             logger.warning(f"[Instrument] - Not enough daily history data for {instrument.symbol} to determine order candidacy.")
+            instrument.is_candidate = False
             return 
         
         # If avg wap of last 20 values (=10 minutes) is higher than the opening price then we have a buying candidate
@@ -143,3 +163,29 @@ class Strategy:
             logger.debug(f"[Instrument] - {instrument.symbol} does not meet strategy criteria for order candidacy due to insufficient price increase.")
             instrument.is_candidate = False
         return
+    
+    def is_market_open_now(self) -> bool:
+        """Check if the market is open now based on strategy opening hours and days."""
+        now = datetime.now()
+        current_day = now.strftime("%a").upper()  # e.g., "MON", "TUE"
+        current_time = now.time()
+        
+        if current_day not in self.details.open_days:
+            logger.info(f"[Strategy] - Market is closed today ({current_day}) for strategy {self.name}.")
+            return False
+        
+        try:
+            opening_str, closing_str = self.details.opening_hours
+            opening_time = time.fromisoformat(opening_str)
+            closing_time = time.fromisoformat(closing_str)
+        except Exception as e:
+            logger.error(f"[Strategy] - Invalid opening hours format for strategy {self.name}: {self.details.opening_hours}. Error: {e}")
+            return False
+        
+        if opening_time <= current_time <= closing_time:
+            return True
+        else:
+            logger.info(f"[Strategy] - Current time {current_time} is outside of market hours ({opening_time} - {closing_time}) for strategy {self.name}.")
+            return False
+        
+        

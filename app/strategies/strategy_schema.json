@@ -129,9 +129,13 @@
                                 "minimum": 0
                             },
                             "opening_hours": {
-                                "type": "string",
+                                "type": "array",
                                 "description": "Market opening hours (HH:MM-HH:MM format)",
-                                "pattern": "^\\d{2}:\\d{2}-\\d{2}:\\d{2}$"
+                                "items": {
+                                    "type": "string",
+                                    "pattern": "^\\d{2}:\\d{2}$",
+                                    "maxItems": 2
+                                }
                             },
                             "open_days": {
                                 "type": "array",

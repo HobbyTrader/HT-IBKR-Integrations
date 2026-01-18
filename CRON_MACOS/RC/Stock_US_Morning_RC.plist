@@ -14,12 +14,18 @@
     <key>StartCalendarInterval</key>
     <array>
       <!-- Weekday: 2=Mon ... 6=Fri -->
-      <dict><key>Weekday</key><integer>2</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>40</integer></dict>
-      <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>40</integer></dict>
-      <dict><key>Weekday</key><integer>4</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>40</integer></dict>
-      <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>40</integer></dict>
-      <dict><key>Weekday</key><integer>6</integer><key>Hour</key><integer>15</integer><key>Minute</key><integer>40</integer></dict>
-    <!-- Repeat the same blocks for Weekday 3–6 -->
+      <dict>
+        <key>Weekday</key>
+        <array>
+          <integer>2</integer>
+          <integer>3</integer>
+          <integer>4</integer>
+          <integer>5</integer>
+          <integer>6</integer>
+        </array>
+        <key>Hour</key><integer>15</integer>
+        <key>Minute</key><integer>40</integer>
+      </dict>
     </array>
     
     <!-- Ensure timezone -->

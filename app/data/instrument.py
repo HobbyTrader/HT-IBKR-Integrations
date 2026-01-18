@@ -4,8 +4,8 @@ import logging
 from dataclasses import dataclass, field
 from typing import List
 
-from ibapi.common import BarData
-from ibapi.contract import Contract
+from vendor.ibapi.common import BarData
+from vendor.ibapi.contract import Contract
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,7 @@ class Instrument:
     
     def to_contract(self) -> Contract:
         contract = Contract()
+        contract.conId = self.id
         contract.symbol = self.symbol
         contract.secType = self.sectype
         contract.currency = self.currency

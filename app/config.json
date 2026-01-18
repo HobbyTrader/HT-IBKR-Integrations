@@ -6,13 +6,14 @@
   "IBKR": {
     "HOST": "localhost",
     "PORT": 7497,
-    "CLIENTID": "0"
+    "CLIENTID": "0",
+    "ACCOUNTIT": "DUMXXXXXX"
   },
   "logging": {
     "logpath": "LOG",
     "logname": "HT_TOOLS.log",
     "loglevel": "DEBUG",
     "consolelevel": "INFO",
-    "backupcount": 2
+    "backupcount": 5
   }
 }
