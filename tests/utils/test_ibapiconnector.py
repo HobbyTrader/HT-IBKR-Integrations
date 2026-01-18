@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import Mock, patch, MagicMock, call
 import threading
 import time
+import itertools
 
 from app.utils.ibapiconnector import IBApiConnector
 from vendor.ibapi.client import EClient
@@ -78,7 +79,7 @@ class TestIBApiConnector(unittest.TestCase):
     def test_disconnect(self, mock_connect, mock_disconnect, mock_is_connected):
         """Test disconnection from IBKR."""
         mock_connect.return_value = None
-        mock_is_connected.side_effect = [False, True]
+        mock_is_connected.side_effect = itertools.chain([False], itertools.repeat(True))
         
         # First connect
         self.connector.open_connection(0)
@@ -151,7 +152,7 @@ class TestIBApiConnector(unittest.TestCase):
     def test_context_manager_exit(self, mock_is_connected, mock_connect, mock_disconnect):
         """Test context manager __exit__ method."""
         mock_connect.return_value = None
-        mock_is_connected.side_effect = [False, True]
+        mock_is_connected.side_effect = itertools.chain([False], itertools.repeat(True))
         
         with self.connector as conn:
             pass
@@ -164,7 +165,7 @@ class TestIBApiConnector(unittest.TestCase):
     def test_context_manager_exception_handling(self, mock_disconnect, mock_connect, mock_is_connected):
         """Test context manager disconnects even on exception."""
         mock_connect.return_value = None
-        mock_is_connected.side_effect = [False, True]
+        mock_is_connected.side_effect = itertools.chain([False], itertools.repeat(True))
         
         try:
             with self.connector as conn:
@@ -224,8 +225,8 @@ class TestIBApiConnector(unittest.TestCase):
     def test_full_connection_lifecycle(self, mock_disconnect, mock_connect, mock_is_connected):
         """Test complete connection lifecycle."""
         mock_connect.return_value = None
-        mock_is_connected.side_effect = [False, True, False]
-        
+        mock_is_connected.side_effect = itertools.chain([False], itertools.repeat(True))
+               
         # Connect
         self.connector.open_connection(1)
         self.assertIsNotNone(self.connector.connection_thread)
