@@ -1,14 +1,15 @@
 import threading
 import time
+import logging
 
-from ibapi.wrapper import EWrapper
-from ibapi.client import *
+from vendor.ibapi.wrapper import EWrapper
+from vendor.ibapi.client import EClient
 
 from app.utils import load_config_ibapi
 
 logger = logging.getLogger(__name__)
 
-class IBApiConnector(EClient, EWrapper):
+class IBApiConnector(EWrapper, EClient):
     def __init__(self):
         EWrapper.__init__(self)
         EClient.__init__(self, wrapper=self)
@@ -16,8 +17,8 @@ class IBApiConnector(EClient, EWrapper):
         
         # Validate and load IBKR connection info
         self.HOST = config.get("HOST", "127.0.0.1")      # Sets default value for HOST if not specified
-        self.PORT = config.get("PORT", 7497)             # Sets default value for PORT if not specified (default is paper trading)
-        self.CLIENT_ID = config.get("CLIENTID", 1)       # Sets default client_id if not specified
+        self.PORT = int(config.get("PORT", 7497))             # Sets default value for PORT if not specified (default is paper trading)
+        self.CLIENT_ID: int = int(config.get("CLIENTID", 1))       # Sets default client_id if not specified
        
         self.connection_thread = None
         self._is_connected = False
@@ -25,7 +26,7 @@ class IBApiConnector(EClient, EWrapper):
        # ------------------------------------------------------
     # Connection management
     # -----------------------------------------------------
-    def open_connection(self, clientId = None):
+    def open_connection(self, clientId: int = None):
         """Connect to TWS or IB Gateway and start the API loop."""
         if self.isConnected():
             logger.warning("IBKR already connected.")
@@ -76,6 +77,7 @@ class IBApiConnector(EClient, EWrapper):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close_connection()
+        return False
 
     # -----------------------------------------------------
     # Optional destructor (not strictly required)

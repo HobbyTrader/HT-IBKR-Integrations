@@ -2,7 +2,7 @@ import logging
 
 from dataclasses import dataclass
 
-from ibapi.execution import Execution
+from vendor.ibapi.execution import Execution
 
 from app.data.instrument import Instrument   
 

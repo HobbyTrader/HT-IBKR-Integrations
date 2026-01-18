@@ -2,7 +2,7 @@ import logging
 
 from dataclasses import dataclass
 
-from ibapi.order import Order
+from vendor.ibapi.order import Order
 
 from app.data.instrument import Instrument   
 
