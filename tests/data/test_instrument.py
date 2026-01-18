@@ -2,8 +2,8 @@ import unittest
 import json
 from unittest.mock import Mock, patch
 
-from ibapi.common import BarData
-from ibapi.contract import Contract
+from vendor.ibapi.common import BarData
+from vendor.ibapi.contract import Contract
 
 from app.data.instrument import Instrument
 
