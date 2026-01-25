@@ -8,7 +8,7 @@ from app.dto.market_order_dto import MarketOrderDTO
 from app.dto.strategy_dto import StrategyDTO
 from app.utils.logger import LoggerManager
 
-LoggerManager()
+LoggerManager("WATCHER")
 logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)

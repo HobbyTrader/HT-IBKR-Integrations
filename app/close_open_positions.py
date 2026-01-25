@@ -11,7 +11,7 @@ from app.services.position import PositionService
 from app.utils.logger import LoggerManager
 from vendor.ibapi.contract import Contract
 
-LoggerManager()
+LoggerManager("CLOSE_POSITIONS")
 logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
