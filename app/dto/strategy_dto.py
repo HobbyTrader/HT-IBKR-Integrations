@@ -10,6 +10,9 @@ class StrategyDTO:
     def __init__(self):
         self.dbconn = SQLiteManager()
         
+    # ============================================================================
+    # ROW TO OBJECT METHODS
+    # ============================================================================ 
     def row_to_strategy(self, row) -> Strategy:
         # Convert a database row to a Strategy object
         logger.debug(f"[StrategyDTO] - Converting row to Strategy: {row}")
@@ -34,13 +37,22 @@ class StrategyDTO:
             
         return Strategy(id=id, name=name, details=details_obj, tags=tags)
     
-    def save_strategy(self, strategy: Strategy):
+    # ============================================================================
+    # SAVE METHODS (INSERT)
+    # ============================================================================     
+    def save_strategy(self, strategy: Strategy) -> int:
         cursor = self.dbconn.get_cursor()
         logger.debug(f"[StrategyDTO] - save Strategy.")
         cursor.execute("""INSERT INTO strategies (strategy_name, strategy_tags, strategy_details) VALUES (?, ?, ?)""",
                             (strategy.name, str(strategy.tags), strategy.details.to_json()))
         self.dbconn.get_connection().commit()
+        id = cursor.lastrowid
+        logger.debug(f"[StrategyDTO] - Strategy saved with ID: {id}")
+        return id
     
+    # ============================================================================
+    # GET METHODS (SELECT)
+    # ============================================================================     
     def get_active_strategies(self)-> list[Strategy]:
         cursor = self.dbconn.get_cursor()
         cursor.execute("SELECT strategy_id, strategy_name, strategy_tags, strategy_details FROM strategies where is_active = 1")
@@ -103,7 +115,10 @@ class StrategyDTO:
         logger.debug(f"[StrategyDTO] - Deactivating Strategy ID: {strategy_id}.")
         cursor.execute("UPDATE strategies SET is_active = 0, update_date = CURRENT_TIMESTAMP WHERE strategy_id = ?", (strategy_id,))
         self.dbconn.get_connection().commit()
-        
+    
+    # ============================================================================
+    # UPDATE METHODS (UPDATE)
+    # ============================================================================     
     def update_strategy(self, strategy_id, strategy: Strategy):
         cursor = self.dbconn.get_cursor()
         logger.debug(f"[StrategyDTO] - Updating Strategy ID: {strategy_id}.")

@@ -51,10 +51,11 @@ def main():
     # Get Orders from database to retrive the ID' base on contract_id and today's orders
     if open_positions:
         for contract in open_positions:
-            logger.info(f"Closing position for contract: {contract.symbol}, SecType: {contract.secType}, Exchange: {contract.exchange}")
+            logger.info(f"Closing position for contract: {contract.symbol}, SecType: {contract.secType}, Exchange: {contract.exchange}, ContractID: {contract.conId}")
             # Implement the logic to close/sell the position here
             # This may involve creating and submitting market orders via IBKR API
             orders_to_cancel = market_order_dto.get_market_orders_by_contract_id_today(contract.conId)
+            logger.info(f"Found {len(orders_to_cancel)} active orders to cancel for contract: {contract.symbol}.")
             for order in orders_to_cancel:
                 with OrderService() as order_serv:
                     order_serv.cancel_order_by_id(order.order_id)

@@ -6,10 +6,11 @@ from importlib.resources import files
 from typing import List
 
 from app.utils.logger import LoggerManager
+from app.utils.db_init import initialize_database
 from app.data.strategy import Strategy
 from app.dto.strategy_dto import StrategyDTO
 
-LoggerManager()
+LoggerManager("LoadStrategy")
 logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
@@ -36,7 +37,6 @@ def insert_strategy(dto, strategies):
             continue
         dto.save_strategy(strategy)
        
-
 def main(json_file_path: str = None):
     """Load strategies from JSON file.
     
@@ -44,6 +44,8 @@ def main(json_file_path: str = None):
         json_file_path: Optional path to JSON file. If not provided, uses sys.argv[1].
     """
     logger.info("Starting strategy loader...")
+    
+    initialize_database()
     
     # If no path provided, try to get from command-line arguments
     if json_file_path is None:

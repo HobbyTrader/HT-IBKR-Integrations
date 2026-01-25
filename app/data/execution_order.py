@@ -1,6 +1,7 @@
+import datetime
 import logging
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from vendor.ibapi.execution import Execution
 
@@ -17,9 +18,9 @@ class ExecutionOrder:
     side: str = ""
     shares: float = 0.0
     price: float = 0.0
-    execution_time: str = ""
-    create_date: str = ""
-    update_date: str = ""
+    execution_time: datetime = field(default_factory=datetime.now)
+    create_date: datetime = field(default_factory=datetime.now)
+    update_date: datetime = field(default_factory=datetime.now)
     
     
     def from_execution_row(self, row: tuple):

@@ -15,11 +15,11 @@
                     },
                     {
                         "name": "priceAbove",
-                        "value": "5"
+                        "value": "3"
                     },
                     {
                         "name": "priceBelow",
-                        "value": "100"
+                        "value": "200"
                     },
                     {
                         "name": "openGapPercAbove",
@@ -27,7 +27,7 @@
                     },
                     {
                         "name": "openGapPercBelow",
-                        "value": "55"
+                        "value": "80"
                     }
                 ],
                 "maxResults": 50,
@@ -37,7 +37,7 @@
                 "max_price_per_trade": 5000,
                 "min_price_per_trade": 1000,
                 "max_trades_per_day": 5,
-                "opening_hours": ["09:30:00","16:00:00"],
+                "opening_hours": ["15:30:00","22:00:00"],
                 "min_open_trade_gap_percentage": 2.0,
                 "max_open_trade_gap_percentage": 10.0,
                 "max_volume_percent": 1.0,

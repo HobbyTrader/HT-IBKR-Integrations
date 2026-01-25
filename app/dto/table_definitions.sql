@@ -61,8 +61,26 @@ CREATE TABLE IF NOT EXISTS executions (
     side TEXT NOT NULL,
     shares REAL NOT NULL,
     price REAL NOT NULL,
-    execution_time TIMESTAMP NOT NULL,
+    execution_time TEXT NOT NULL,
     create_date  TEXT NOT NULL DEFAULT (datetime('now')),
     update_date  TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (order_id) REFERENCES market_orders(order_id)
+);
+
+-- Table des données historiques des instruments
+-- Permet de stocker les données historiques pour analyse et backtesting
+CREATE TABLE IF NOT EXISTS history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    instrument_id INTEGER NOT NULL,
+    symbol TEXT NOT NULL,
+    bar_time TEXT NOT NULL,
+    open_price REAL NOT NULL,
+    high_price REAL NOT NULL,
+    low_price REAL NOT NULL,
+    close_price REAL NOT NULL,
+    volume INTEGER NOT NULL,
+    wap REAL DEFAULT 0,
+    bar_count INTEGER DEFAULT 0 ,
+    create_date  TEXT NOT NULL DEFAULT (datetime('now')),
+    update_date  TEXT NOT NULL DEFAULT (datetime('now'))
 );
