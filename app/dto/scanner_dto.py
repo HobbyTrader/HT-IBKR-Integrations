@@ -12,6 +12,9 @@ class ScannerDTO:
         self.dbconn = SQLiteManager()
         self.strategy_id = strategy_id
         
+    # ============================================================================
+    # ROW TO OBJECT METHODS
+    # ============================================================================ 
     def rows_to_instruments(self, rows) -> List[Instrument]:
         instruments: List[Instrument] = []
         for r in rows:
@@ -24,20 +27,33 @@ class ScannerDTO:
             instruments.append(inst)
         return instruments
     
-    def save_details(self, reqId, rank, contractDetails, exec_key:str="AAA"):
+    # ============================================================================
+    # SAVE METHODS (INSERT)
+    # ============================================================================     
+    def save_details(self, reqId, rank, contractDetails, exec_key:str="AAA") -> int:
         cursor = self.dbconn.conn.cursor()
         logger.debug(f"[ScannerDTO] - save ScannerData. ContractDetails: {contractDetails}")
         cursor.execute(
             """INSERT INTO scanner_results (req_id, rank, strategy_id, contract_id, contract_symbol, contract_sectype, contract_currency, contract_trading_class, contract_exchange,exec_key) VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (reqId, rank, self.strategy_id, contractDetails.contract.conId, contractDetails.contract.symbol, contractDetails.contract.secType, contractDetails.contract.currency, contractDetails.contract.tradingClass, contractDetails.contract.exchange, exec_key))
-        self.dbconn.conn.commit()
-        
+        self.dbconn.conn.commit()        
+        id = cursor.lastrowid
+        logger.debug(f"[ScannerDTO] - ScannerData saved with ID: {id}")
+        return id
+    
+    # ============================================================================
+    # UPDATE METHODS (UPDATE)
+    # ============================================================================     
     def set_order_candidate(self, exec_key, contract_id, is_order_candidate):
         cursor = self.dbconn.conn.cursor()
         cursor.execute(
             """UPDATE scanner_results SET is_order_candidate = ?, update_date = CURRENT_TIMESTAMP WHERE exec_key = ? AND contract_id = ?""",
             (is_order_candidate, exec_key, contract_id))
         self.dbconn.conn.commit()
+    
+    # ============================================================================
+    # GET METHODS (SELECT)
+    # ============================================================================     
        
     def get_details(self):
         cursor = self.dbconn.conn.cursor()

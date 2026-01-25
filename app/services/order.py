@@ -9,6 +9,7 @@ from app.dto.market_order_dto import MarketOrderDTO
 
 from app.utils.ibapiconnector import IBApiConnector
 
+from vendor.ibapi.order_cancel import OrderCancel
 from vendor.ibapi.utils import iswrapper
 from vendor.ibapi.order import Order   
 from vendor.ibapi.contract import Contract
@@ -172,8 +173,7 @@ class OrderService(IBApiConnector):
     # ============================================================================
     # Create Bracket Order
     def place_bracket_order(self,
-        instrument: Instrument, 
-        contract_id: int=None):
+        instrument: Instrument):
         events = []
         # Define quantity based on strategy and on volume exchanged
         quantity = int(instrument.volume_buy)
@@ -194,13 +194,29 @@ class OrderService(IBApiConnector):
         self.placeOrder(parentOrder.orderId, contract, parentOrder)
 
         #This will be our “take profit” order, a LMT order to sell at a higher price
-        targetOrder = self.create_target_order_LMT(instrument, quantity, parentOrderId)
+        targetOrder1 = self.create_target_order_LMT(instrument, int(quantity/3), parentOrderId)
+        targetOrder1.lmtPrice = targetOrder1.lmtPrice - 0.05  # Adjust take profit price for first target
+        targetOrder2 = self.create_target_order_LMT(instrument, int(quantity/3), parentOrderId)
+        targetOrder2.lmtPrice = targetOrder2.lmtPrice - 0.02 # Standard take profit price for second target
+        targetOrder3 = self.create_target_order_LMT(instrument, quantity - 2*(int(quantity/3)), parentOrderId)
         
-        target_events = threading.Event()
-        self.order_events[targetOrder.orderId] = target_events
-        events.append(target_events)        
-        self.store_order(targetOrder, instrument)        
-        self.placeOrder(targetOrder.orderId, contract, targetOrder)
+        target_events1 = threading.Event()
+        self.order_events[targetOrder1.orderId] = target_events1
+        events.append(target_events1)        
+        self.store_order(targetOrder1, instrument)        
+        self.placeOrder(targetOrder1.orderId, contract, targetOrder1)
+        
+        # target_events2 = threading.Event()
+        # self.order_events[targetOrder2.orderId] = target_events2
+        # events.append(target_events2)        
+        # self.store_order(targetOrder2, instrument)        
+        # self.placeOrder(targetOrder2.orderId, contract, targetOrder2)       
+        
+        # target_events3 = threading.Event()
+        # self.order_events[targetOrder3.orderId] = target_events3
+        # events.append(target_events3)        
+        # self.store_order(targetOrder3, instrument)        
+        # self.placeOrder(targetOrder3.orderId, contract, targetOrder3)
         
         #This will be our “stop loss” order, a STP order to sell at a lower price
         stopLossOrder = self.create_stop_order_STP(instrument, quantity, parentOrderId)
@@ -225,7 +241,7 @@ class OrderService(IBApiConnector):
                 # raise TimeoutError("Order confirmation timeout")
                 
         # Cleanup
-        for order_id in [parentOrder.orderId, stopLossOrder.orderId, targetOrder.orderId]:
+        for order_id in [parentOrder.orderId, stopLossOrder.orderId, targetOrder1.orderId]:
             self.order_events.pop(order_id, None)
 
     def sell_open_position(self, contract: Contract, quantity: int, strategy_id: int):
@@ -270,5 +286,5 @@ class OrderService(IBApiConnector):
     def cancel_order_by_id(self, order_id: int):
         # Placeholder for cancelling specific order in IBKR
         logger.info(f"[OrderService] - Cancelling order by ID: {order_id}...")
-        self.cancelOrder(order_id)
+        self.cancelOrder(order_id, OrderCancel())
         

@@ -3,6 +3,7 @@ import logging
 from typing import List
 
 from app.data.execution_order import ExecutionOrder
+from app.utils.date_helper import _parse_datetime
 from app.utils.sqllitemanager import SQLiteManager
 
 logger = logging.getLogger(__name__)
@@ -34,15 +35,15 @@ class ExecutionOrderDTO:
             side=side,
             shares=shares,
             price=price,
-            execution_time=execution_time,
-            create_date=create_date,
-            update_date=update_date
+            execution_time=_parse_datetime(execution_time),
+            create_date=_parse_datetime(create_date),
+            update_date=_parse_datetime(update_date)
         )
     
     # ============================================================================
     # SAVE METHODS (INSERT)
     # ============================================================================     
-    def save_execution_order(self, execution_order: ExecutionOrder):
+    def save_execution_order(self, execution_order: ExecutionOrder) -> int:
         cursor = self.dbconn.conn.cursor()
         logger.debug(f"[ExecutionOrderDTO] - save ExecutionOrder. ExecutionOrder: {execution_order}")
         cursor.execute(
@@ -62,6 +63,9 @@ class ExecutionOrderDTO:
              execution_order.price, 
              execution_order.execution_time))
         self.dbconn.conn.commit()   
+        id = cursor.lastrowid
+        logger.debug(f"[ExecutionOrderDTO] - ExecutionOrder saved with ID: {id}")
+        return id
     
     # ============================================================================
     # GET METHODS (SELECT)

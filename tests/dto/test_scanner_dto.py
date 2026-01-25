@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import patch, MagicMock, Mock
 
+import sqlite3
+
 from app.dto.scanner_dto import ScannerDTO
 
 
@@ -101,3 +103,119 @@ class TestScannerDTO(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestScannerDTOIntegration(unittest.TestCase):
+    """Integration tests with actual in-memory database."""
+
+    def setUp(self):
+        # Create in-memory DB
+        self.conn = sqlite3.connect(":memory:")
+        self._create_tables()
+
+        # Patch SQLiteManager to use this connection
+        mock_db_manager = Mock()
+        mock_db_manager.conn = self.conn
+
+        self.db_patcher = patch("app.dto.scanner_dto.SQLiteManager", return_value=mock_db_manager)
+        self.db_patcher.start()
+
+        self.dto = ScannerDTO(strategy_id=123)
+
+    def tearDown(self):
+        if hasattr(self, "conn"):
+            self.conn.close()
+        if hasattr(self, "db_patcher"):
+            self.db_patcher.stop()
+
+    def _create_tables(self):
+        cursor = self.conn.cursor()
+
+        # strategies table (for FK)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS strategies (
+                strategy_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                update_date  TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+        """)
+
+        # scanner_results table aligned with current schema
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS scanner_results (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                exec_key TEXT NOT NULL,
+                strategy_id INTEGER NOT NULL,
+                req_id INTEGER NOT NULL, 
+                rank INTEGER NOT NULL, 
+                contract_id INTEGER NOT NULL,
+                contract_symbol TEXT NOT NULL, 
+                contract_sectype TEXT NOT NULL,
+                contract_currency TEXT NOT NULL,
+                contract_trading_class TEXT NOT NULL,
+                contract_exchange TEXT,
+                is_order_candidate BOOLEAN NOT NULL DEFAULT 0,
+                create_date  TEXT NOT NULL DEFAULT (datetime('now')),
+                update_date  TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (strategy_id) REFERENCES strategies(strategy_id)
+            );
+        """)
+
+        # Insert matching strategy
+        cursor.execute("INSERT INTO strategies (strategy_id) VALUES (123)")
+        self.conn.commit()
+
+    # ------------------------------------------------------------------ integration tests
+
+    def test_save_details_and_get_details(self):
+        contract = Mock(conId=1, symbol="AAPL", secType="STK",
+                        currency="USD", tradingClass="NMS", exchange="NASDAQ")
+        details = Mock(contract=contract)
+
+        self.dto.save_details(reqId=10, rank=5, contractDetails=details, exec_key="KEY")
+
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            SELECT req_id, rank, strategy_id, contract_id, exec_key
+            FROM scanner_results
+            WHERE exec_key = ?
+        """, ("KEY",))
+        row = cursor.fetchone()
+        self.assertIsNotNone(row)
+
+        # Explicit column checks (avoid column-order assumptions)
+        self.assertEqual(row[0], 10)    # req_id
+        self.assertEqual(row[1], 5)     # rank
+        self.assertEqual(row[2], 123)   # strategy_id
+        self.assertEqual(row[3], 1)     # contract_id
+        self.assertEqual(row[4], "KEY") # exec_key
+
+    def test_set_order_candidate_updates(self):
+        # Insert one row
+        contract = Mock(conId=2, symbol="MSFT", secType="STK",
+                        currency="USD", tradingClass="NMS", exchange="NASDAQ")
+        details = Mock(contract=contract)
+        self.dto.save_details(reqId=11, rank=1, contractDetails=details, exec_key="KEY2")
+
+        # Update candidate flag
+        self.dto.set_order_candidate(exec_key="KEY2", contract_id=2, is_order_candidate=1)
+
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            SELECT is_order_candidate
+            FROM scanner_results
+            WHERE exec_key = ? AND contract_id = ?
+        """, ("KEY2", 2))
+        row = cursor.fetchone()
+        self.assertIsNotNone(row)
+        self.assertEqual(row[0], 1)
+
+    def test_get_details(self):
+        # Insert two rows
+        for idx, symbol in [(1, "AAPL"), (2, "MSFT")]:
+            contract = Mock(conId=idx, symbol=symbol, secType="STK",
+                            currency="USD", tradingClass="NMS", exchange="NASDAQ")
+            details = Mock(contract=contract)
+            self.dto.save_details(reqId=20 + idx, rank=idx, contractDetails=details, exec_key="K")
+
+        out = self.dto.get_details()
+        self.assertEqual(len(out), 2)

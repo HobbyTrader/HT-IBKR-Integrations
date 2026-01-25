@@ -3,6 +3,7 @@ import logging
 from typing import List
 
 from app.data.market_order import MarketOrder
+from app.utils.date_helper import _parse_datetime
 from app.utils.sqllitemanager import SQLiteManager
 
 logger = logging.getLogger(__name__)
@@ -20,22 +21,24 @@ class MarketOrderDTO:
         id = row[0]
         order_id = row[1]
         strategy_id = row[2]
-        order_details = row[3]
-        order_status = row[4]
-        order_quantity = row[5]
-        order_currency = row[6]
-        order_price = row[7]
-        order_type = row[8]
-        order_action = row[9]
-        order_parent_id = row[10]
-        create_date = row[11]
-        update_date = row[12]
+        order_contract_id = row[3]
+        order_symbol = row[4]
+        order_status = row[5]
+        order_quantity = row[6]
+        order_currency = row[7]
+        order_price = row[8]
+        order_type = row[9]
+        order_action = row[10]
+        order_parent_id = row[11]
+        create_date = row[12]
+        update_date = row[13]
                 
         return MarketOrder(
             id=id,
             order_id=order_id,
             strategy_id=strategy_id,
-            order_details=order_details,
+            order_contract_id=order_contract_id,
+            order_symbol=order_symbol,
             order_status=order_status,
             order_quantity=order_quantity,
             order_currency=order_currency,
@@ -43,21 +46,22 @@ class MarketOrderDTO:
             order_type=order_type,
             order_action=order_action,
             order_parent_id=order_parent_id,
-            create_date=create_date,
-            update_date=update_date
+            create_date=_parse_datetime(create_date),
+            update_date=_parse_datetime(update_date)
         )
     
     # ============================================================================
     # SAVE METHODS (INSERT)
     # ============================================================================     
-    def save_market_order(self, market_order: MarketOrder):
+    def save_market_order(self, market_order: MarketOrder) -> int:
         cursor = self.dbconn.conn.cursor()
         logger.debug(f"[MarketOrderDTO] - save MarketOrder. MarketOrder: {market_order}")
         cursor.execute(
             """INSERT INTO market_orders (
                 order_id,
                 strategy_id, 
-                order_details, 
+                order_contract_id,
+                order_symbol,
                 order_status, 
                 order_quantity, 
                 order_currency, 
@@ -65,12 +69,13 @@ class MarketOrderDTO:
                 order_type, 
                 order_action, 
                 order_parent_id) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
             (
              market_order.order_id,
              market_order.strategy_id, 
-             market_order.order_details, 
+             market_order.order_contract_id, 
+             market_order.order_symbol,
              market_order.order_status, 
              market_order.order_quantity, 
              market_order.order_currency, 
@@ -79,6 +84,9 @@ class MarketOrderDTO:
              market_order.order_action, 
              market_order.order_parent_id))
         self.dbconn.conn.commit()
+        id = cursor.lastrowid
+        logger.debug(f"[MarketOrderDTO] - MarketOrder saved with ID: {id}")
+        return id
     
     # ============================================================================
     # GET METHODS (SELECT)

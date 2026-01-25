@@ -45,7 +45,7 @@ class MarketService(IBApiConnector):
     # ============================================================================    
     def get_realtime_bars(self, contract: Contract):
         logger.debug("[MarketService] - Realtime Bars requested")
-        self.reqHistoricalData(self.nextId(), contract,"", "1 D", "30 secs", "TRADES",1,1, False, [])
+        self.reqHistoricalData(self.nextId(), contract,"", "1 H", "30 secs", "TRADES",1,1, True, [])
         time.sleep(10)
         
     def get_historical_day_data(self):
@@ -57,7 +57,7 @@ class MarketService(IBApiConnector):
         contract.secType = self.instrument.sectype
         contract.currency = self.instrument.currency
         contract.exchange = self.instrument.exchange
-        self.reqHistoricalData(self.orderId, contract,"", "1 D", "30 secs", "TRADES",0,1, False, [])
+        self.reqHistoricalData(self.orderId, contract,"", "3600 S", "30 secs", "TRADES",0,1, True, [])
         
         evt.wait(timeout=15)
         self.Historical_events.pop(self.instrument.symbol, None)

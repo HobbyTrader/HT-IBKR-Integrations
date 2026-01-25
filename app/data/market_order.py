@@ -1,6 +1,7 @@
 import logging
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 
 from vendor.ibapi.order import Order
 
@@ -23,8 +24,8 @@ class MarketOrder:
     order_type: str = ""
     order_action: str = ""
     order_parent_id: int = 0
-    create_date: str = ""
-    update_date: str = ""
+    create_date: datetime = field(default_factory=datetime.now)
+    update_date: datetime = field(default_factory=datetime.now)
     
     def from_order_row(self, row: tuple):
         (self.id, self.order_id, self.strategy_id, self.order_contract_id, self.order_symbol, 
@@ -39,7 +40,13 @@ class MarketOrder:
         self.order_quantity = order.totalQuantity
         self.order_currency = currency
         # En fonction de l'ordre, se baser sur limited price ou autre
-        self.order_price = order.lmtPrice
+        match order.orderType:
+            case "STP":
+                self.order_price = order.auxPrice
+            case "LMT":
+                self.order_price = order.lmtPrice
+            case _:
+                self.order_price = 0.0
         
         self.order_type = order.orderType
         self.order_action = order.action
