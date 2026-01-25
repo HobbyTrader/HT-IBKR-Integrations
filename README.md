@@ -57,8 +57,8 @@ Current installed package in python environment
 packages are created in dist/ folder
 package name and version are taken from information present into pyproject.toml file
 
-> [project]
-name = "ht-ibkr-integrations"
+> [project]<br>
+name = "ht-ibkr-integrations"<br>
 version = "0.2.0"
 
 ---
