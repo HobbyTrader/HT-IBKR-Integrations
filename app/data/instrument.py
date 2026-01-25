@@ -4,8 +4,10 @@ import logging
 from dataclasses import dataclass, field
 from typing import List
 
+from app.dto.history_dto import HistoryDTO
 from vendor.ibapi.common import BarData
 from vendor.ibapi.contract import Contract
+from app.data.history import History
 
 logger = logging.getLogger(__name__)
 
@@ -81,3 +83,12 @@ class Instrument:
     def set_volume_buy(self, volume: int):
         self.volume_buy = volume
         logger.debug(f"[Instrument] - Set volume to buy for {self.symbol}: {self.volume_buy}")
+        
+    def store_history(self):
+        # Placeholder for storing instrument history
+        logger.debug(f"[Instrument] - Storing instrument history for {self.symbol}.")
+        for bar in self.daily_history:
+            logger.debug(f"[Instrument History] - {self.symbol} - Time: {bar.date}, Open: {bar.open}, High: {bar.high}, Low: {bar.low}, Close: {bar.close}, Volume: {bar.volume}, WAP: {bar.wap}")
+            hist = History.from_bar(self.id, self.symbol, bar)
+            hist_dto = HistoryDTO()
+            hist_dto.save_history(hist)
