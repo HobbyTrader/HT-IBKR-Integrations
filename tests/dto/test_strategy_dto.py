@@ -1,6 +1,8 @@
 import unittest
 from unittest.mock import Mock, MagicMock, patch
 
+import sqlite3
+
 from app.dto.strategy_dto import StrategyDTO
 
 
@@ -42,7 +44,7 @@ class TestStrategyDTO(unittest.TestCase):
 
         self.dto.row_to_strategy(row)
 
-        mock_strategy.assert_called_once_with(id=2, name="MeanRev", details="DETAILS", tags=["US", "STOCK", "TECH"])
+        mock_strategy.assert_called_once_with(id=2, name="MeanRev", details=None, tags=["US", "STOCK", "TECH"])
 
     @patch("app.dto.strategy_dto.Strategy")
     @patch("app.dto.strategy_dto.StrategyDetail")
@@ -52,7 +54,7 @@ class TestStrategyDTO(unittest.TestCase):
 
         self.dto.row_to_strategy(row)
 
-        mock_strategy.assert_called_once_with(id=3, name="FX", details="DETAILS", tags=["FX", "G10"])
+        mock_strategy.assert_called_once_with(id=3, name="FX", details=None, tags=["FX", "G10"])
 
     # ------------------------------------------------------------------ save_strategy
 
@@ -152,3 +154,128 @@ class TestStrategyDTO(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestStrategyDTOIntegration(unittest.TestCase):
+    """Integration tests with actual in-memory database."""
+
+    def setUp(self):
+        self.conn = sqlite3.connect(":memory:")
+        self._create_tables()
+
+        mock_db = Mock()
+        mock_db.get_connection.return_value = self.conn
+        mock_db.get_cursor.return_value = self.conn.cursor()
+
+        self.db_patcher = patch("app.dto.strategy_dto.SQLiteManager", return_value=mock_db)
+        self.db_patcher.start()
+
+        self.dto = StrategyDTO()
+
+    def tearDown(self):
+        if hasattr(self, "conn"):
+            self.conn.close()
+        if hasattr(self, "db_patcher"):
+            self.db_patcher.stop()
+
+    def _create_tables(self):
+        cur = self.conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS strategies (
+                strategy_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                strategy_name TEXT NOT NULL,
+                strategy_tags TEXT NOT NULL,
+                strategy_details TEXT NOT NULL,
+                is_active BOOLEAN NOT NULL DEFAULT 1,
+                create_date TEXT NOT NULL DEFAULT (datetime('now')),
+                update_date TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+        """)
+        self.conn.commit()
+
+    def test_save_and_get_by_name(self):
+        strategy = Mock()
+        strategy.name = "GapOpen"
+        strategy.tags = ["US", "STOCK"]
+        strategy.details.to_json.return_value = '''{"instrument": "STK",
+                "locationCode": "STK.US.MAJOR",
+                "scanCode": "HIGH_OPEN_GAP",
+                "scan_options": [],
+                "filter_options": [],
+                "maxResults": 50,
+                "minutes_to_order": 3,
+                "max_shares_to_invest_per_trade": 1000,
+                "min_shares_to_invest_per_trade": 100,
+                "max_price_per_trade": 5000,
+                "min_price_per_trade": 1000,
+                "max_trades_per_day": 5,
+                "opening_hours": ["15:30:00","22:00:00"],
+                "min_open_trade_gap_percentage": 2.0,
+                "max_open_trade_gap_percentage": 10.0,
+                "max_volume_percent": 1.0,
+                "stop_loss_percent": 95.0,
+                "take_profit_percent": 110.0,
+                "increase_position_candidate_percentage": 0.5}'''
+
+        self.dto.save_strategy(strategy)
+
+        out = self.dto.get_strategy_by_name("GapOpen")
+        self.assertIsNotNone(out)
+        self.assertEqual(out.name, "GapOpen")
+        self.assertEqual(out.tags, ["US", "STOCK"])
+
+    def test_get_active_strategies_only(self):
+        cur = self.conn.cursor()
+        cur.execute("""
+            INSERT INTO strategies (strategy_name, strategy_tags, strategy_details, is_active)
+            VALUES
+            ('S1', 'US', '{}', 1),
+            ('S2', 'EU', '{}', 0)
+        """)
+        self.conn.commit()
+
+        results = self.dto.get_active_strategies()
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].name, "S1")
+
+    def test_update_strategy_updates_fields(self):
+        cur = self.conn.cursor()
+        cur.execute("""
+            INSERT INTO strategies (strategy_name, strategy_tags, strategy_details, is_active)
+            VALUES ('Old', 'US', '{}', 1)
+        """)
+        self.conn.commit()
+
+        strategy_id = cur.lastrowid
+
+        new_strategy = Mock()
+        new_strategy.name = "New"
+        new_strategy.tags = ["EU"]
+        new_strategy.details.to_json.return_value = '{"v":1}'
+
+        self.dto.update_strategy(strategy_id, new_strategy)
+
+        cur.execute("""
+            SELECT strategy_name, strategy_tags, strategy_details
+            FROM strategies WHERE strategy_id = ?
+        """, (strategy_id,))
+        row = cur.fetchone()
+
+        self.assertEqual(row[0], "New")
+        self.assertEqual(row[1], "['EU']")
+        self.assertEqual(row[2], '{"v":1}')
+
+    def test_deactivate_strategy_sets_inactive(self):
+        cur = self.conn.cursor()
+        cur.execute("""
+            INSERT INTO strategies (strategy_name, strategy_tags, strategy_details, is_active)
+            VALUES ('S1', 'US', '{}', 1)
+        """)
+        self.conn.commit()
+
+        strategy_id = cur.lastrowid
+        self.dto.deactivate_strategy(strategy_id)
+
+        cur.execute("SELECT is_active FROM strategies WHERE strategy_id = ?", (strategy_id,))
+        row = cur.fetchone()
+        self.assertEqual(row[0], 0)

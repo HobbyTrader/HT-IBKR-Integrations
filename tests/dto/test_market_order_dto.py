@@ -1,7 +1,11 @@
 import unittest
 from unittest.mock import patch, MagicMock, Mock
+from datetime import datetime
+import sqlite3
 
 from app.dto.market_order_dto import MarketOrderDTO
+from app.data.market_order import MarketOrder
+from app.utils.date_helper import _parse_datetime
 
 
 class TestMarketOrderDTO(unittest.TestCase):
@@ -26,7 +30,8 @@ class TestMarketOrderDTO(unittest.TestCase):
         mo = Mock()
         mo.order_id = 1
         mo.strategy_id = 2
-        mo.order_details = "details"
+        mo.order_contract_id = 3
+        mo.order_symbol = "AAPL"
         mo.order_status = "NEW"
         mo.order_quantity = 10
         mo.order_currency = "USD"
@@ -44,7 +49,7 @@ class TestMarketOrderDTO(unittest.TestCase):
         self.assertEqual(
             params,
             (
-                1, 2, "details", "NEW", 10, "USD",
+                1, 2, 3, "AAPL", "NEW", 10, "USD",
                 123.45, "MKT", "BUY", None
             ),
         )
@@ -175,7 +180,8 @@ class TestMarketOrderDTO(unittest.TestCase):
             1,              # id
             100,            # order_id
             5,              # strategy_id
-            "details",      # order_details
+            3,              # order_contract_id
+            "AAPL",         # order_symbol
             "FILLED",       # order_status
             10,             # order_quantity
             "USD",          # order_currency
@@ -183,8 +189,8 @@ class TestMarketOrderDTO(unittest.TestCase):
             "MKT",          # order_type
             "BUY",          # order_action
             None,           # order_parent_id
-            "2025-01-04",   # create_date
-            "2025-01-04"    # update_date
+            _parse_datetime("2025-01-04"),   # create_date
+            _parse_datetime("2025-01-04")    # update_date
         )
         
         mock_order = Mock()
@@ -196,7 +202,8 @@ class TestMarketOrderDTO(unittest.TestCase):
             id=1,
             order_id=100,
             strategy_id=5,
-            order_details="details",
+            order_contract_id=3,
+            order_symbol="AAPL",
             order_status="FILLED",
             order_quantity=10,
             order_currency="USD",
@@ -204,10 +211,342 @@ class TestMarketOrderDTO(unittest.TestCase):
             order_type="MKT",
             order_action="BUY",
             order_parent_id=None,
-            create_date="2025-01-04",
-            update_date="2025-01-04"
+            create_date=_parse_datetime("2025-01-04"),
+            update_date=_parse_datetime("2025-01-04")
         )
         self.assertEqual(result, mock_order)
+
+
+class TestMarketOrderDTOIntegration(unittest.TestCase):
+    """Integration tests with actual in-memory database."""
+    
+    def setUp(self):
+        """Set up each test with a fresh in-memory database."""
+        # Create in-memory database directly
+        self.conn = sqlite3.connect(':memory:')
+        
+        # Create tables directly
+        self._create_tables()
+        
+        # Mock SQLiteManager to use our connection
+        mock_db_manager = Mock()
+        mock_db_manager.conn = self.conn
+        
+        # Patch SQLiteManager
+        self.db_patcher = patch(
+            'app.dto.market_order_dto.SQLiteManager',
+            return_value=mock_db_manager
+        )
+        self.db_patcher.start()
+        
+        # Create MarketOrderDTO instance
+        self.market_order_dto = MarketOrderDTO()
+    
+    def _create_tables(self):
+        """Create necessary database tables."""
+        cursor = self.conn.cursor()
+        
+        # Create strategies table (required for foreign key)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS strategies (
+                strategy_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                strategy_name TEXT NOT NULL,
+                strategy_tags TEXT,
+                strategy_details TEXT NOT NULL,
+                is_active BOOLEAN NOT NULL DEFAULT 1,
+                create_date TEXT NOT NULL DEFAULT (datetime('now')),
+                update_date TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+        """)
+        
+        # Create market_orders table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS market_orders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                order_id INTEGER NOT NULL UNIQUE,
+                strategy_id INTEGER NOT NULL,
+                order_contract_id INTEGER NOT NULL,
+                order_symbol TEXT NOT NULL,
+                order_status TEXT NOT NULL,
+                order_quantity INTEGER NOT NULL,
+                order_currency TEXT NOT NULL,
+                order_price REAL NOT NULL,
+                order_type TEXT NOT NULL,
+                order_action TEXT NOT NULL,
+                order_parent_id INTEGER,
+                create_date TEXT NOT NULL DEFAULT (datetime('now')),
+                update_date TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (strategy_id) REFERENCES strategies(strategy_id)
+            )
+        """)
+        
+        # Insert a test strategy for foreign key constraint
+        cursor.execute("""
+            INSERT INTO strategies (strategy_id, strategy_name, strategy_details)
+            VALUES (1, 'Test Strategy', 'Test strategy details')
+        """)
+        
+        self.conn.commit()
+    
+    def tearDown(self):
+        """Clean up after each test."""
+        if hasattr(self, 'conn'):
+            self.conn.close()
+        
+        if hasattr(self, 'db_patcher'):
+            self.db_patcher.stop()
+    
+    # ============================================================================
+    # INTEGRATION TESTS
+    # ============================================================================
+    
+    def test_save_and_retrieve_market_order(self):
+        """Test full cycle of saving and retrieving a market order."""
+        # Create a market order
+        test_order = MarketOrder(
+            id=None,
+            order_id=1001,
+            strategy_id=1,
+            order_contract_id=3,
+            order_symbol="AAPL",
+            order_status="PreSubmitted",
+            order_quantity=100,
+            order_currency="USD",
+            order_price=150.50,
+            order_type="MKT",
+            order_action="BUY",
+            order_parent_id=None
+        )
+        
+        # Save the order
+        saved_id = self.market_order_dto.save_market_order(test_order)
+        self.assertIsNotNone(saved_id)
+        self.assertGreater(saved_id, 0)
+        
+        # Retrieve by order_id
+        retrieved = self.market_order_dto.get_market_order_by_id(1001)
+        self.assertIsNotNone(retrieved)
+        self.assertEqual(retrieved.order_id, test_order.order_id)
+        self.assertEqual(retrieved.strategy_id, test_order.strategy_id)
+        self.assertEqual(retrieved.order_contract_id, test_order.order_contract_id)
+        self.assertEqual(retrieved.order_symbol, test_order.order_symbol)
+        self.assertEqual(retrieved.order_status, test_order.order_status)
+        self.assertEqual(retrieved.order_quantity, test_order.order_quantity)
+        self.assertEqual(retrieved.order_currency, test_order.order_currency)
+        self.assertEqual(retrieved.order_price, test_order.order_price)
+        self.assertEqual(retrieved.order_type, test_order.order_type)
+        self.assertEqual(retrieved.order_action, test_order.order_action)
+    
+    def test_save_multiple_orders_and_retrieve_all(self):
+        """Test saving multiple orders and retrieving all."""
+        orders = [
+            MarketOrder(
+                id=None,
+                order_id=2001,
+                strategy_id=1,
+                order_contract_id=3,
+                order_symbol="AAPL",
+                order_status="PreSubmitted",
+                order_quantity=100,
+                order_currency="USD",
+                order_price=150.50,
+                order_type="MKT",
+                order_action="BUY",
+                order_parent_id=None
+            ),
+            MarketOrder(
+                id=None,
+                order_id=2002,
+                strategy_id=1,
+                order_contract_id=4,
+                order_symbol="MSFT",
+                order_status="Submitted",
+                order_quantity=50,
+                order_currency="USD",
+                order_price=380.25,
+                order_type="LMT",
+                order_action="SELL",
+                order_parent_id=None
+            )
+        ]
+        
+        # Save all orders
+        for order in orders:
+            saved_id = self.market_order_dto.save_market_order(order)
+            self.assertIsNotNone(saved_id)
+        
+        # Retrieve all orders
+        all_orders = self.market_order_dto.get_all_market_orders()
+        self.assertEqual(len(all_orders), 2)
+        self.assertEqual(all_orders[0].order_id, 2001)
+        self.assertEqual(all_orders[1].order_id, 2002)
+    
+    def test_get_orders_by_strategy(self):
+        """Test retrieving orders for a specific strategy."""
+        # Create orders for different strategies
+        cursor = self.conn.cursor()
+        cursor.execute("""
+            INSERT INTO strategies (strategy_id, strategy_name, strategy_details)
+            VALUES (2, 'Strategy 2', 'Second test strategy')
+        """)
+        self.conn.commit()
+        
+        orders = [
+            MarketOrder(
+                id=None, order_id=3001, strategy_id=1,
+                order_contract_id=3, order_symbol="AAPL", order_status="NEW",
+                order_quantity=100, order_currency="USD",
+                order_price=150.00, order_type="MKT",
+                order_action="BUY", order_parent_id=None
+            ),
+            MarketOrder(
+                id=None, order_id=3002, strategy_id=1,
+                order_contract_id=3, order_symbol="AAPL", order_status="NEW",
+                order_quantity=200, order_currency="USD",
+                order_price=151.00, order_type="MKT",
+                order_action="BUY", order_parent_id=None
+            ),
+            MarketOrder(
+                id=None, order_id=3003, strategy_id=2,
+                order_contract_id=3, order_symbol="AAPL", order_status="NEW",
+                order_quantity=300, order_currency="USD",
+                order_price=152.00, order_type="MKT",
+                order_action="BUY", order_parent_id=None
+            )
+        ]
+        
+        for order in orders:
+            self.market_order_dto.save_market_order(order)
+        
+        # Get orders for strategy 1
+        strategy_1_orders = self.market_order_dto.get_market_orders_by_strategy(1)
+        self.assertEqual(len(strategy_1_orders), 2)
+        for order in strategy_1_orders:
+            self.assertEqual(order.strategy_id, 1)
+        
+        # Get orders for strategy 2
+        strategy_2_orders = self.market_order_dto.get_market_orders_by_strategy(2)
+        self.assertEqual(len(strategy_2_orders), 1)
+        self.assertEqual(strategy_2_orders[0].strategy_id, 2)
+    
+    def test_get_orders_by_status(self):
+        """Test retrieving orders by status."""
+        orders = [
+            MarketOrder(
+                id=None, order_id=4001, strategy_id=1,
+                order_contract_id=3, order_symbol="AAPL", order_status="PreSubmitted",
+                order_quantity=100, order_currency="USD",
+                order_price=150.00, order_type="MKT",
+                order_action="BUY", order_parent_id=None
+            ),
+            MarketOrder(
+                id=None, order_id=4002, strategy_id=1,
+                order_contract_id=3, order_symbol="AAPL", order_status="Filled",
+                order_quantity=200, order_currency="USD",
+                order_price=151.00, order_type="MKT",
+                order_action="BUY", order_parent_id=None
+            ),
+            MarketOrder(
+                id=None, order_id=4003, strategy_id=1,
+                order_contract_id=3, order_symbol="AAPL", order_status="Filled",
+                order_quantity=300, order_currency="USD",
+                order_price=152.00, order_type="MKT",
+                order_action="BUY", order_parent_id=None
+            )
+        ]
+        
+        for order in orders:
+            self.market_order_dto.save_market_order(order)
+        
+        # Get filled orders
+        filled_orders = self.market_order_dto.get_market_orders_by_status("Filled")
+        self.assertEqual(len(filled_orders), 2)
+        for order in filled_orders:
+            self.assertEqual(order.order_status, "Filled")
+        
+        # Get presubmitted orders
+        presubmitted_orders = self.market_order_dto.get_market_orders_by_status("PreSubmitted")
+        self.assertEqual(len(presubmitted_orders), 1)
+        self.assertEqual(presubmitted_orders[0].order_status, "PreSubmitted")
+    
+    def test_update_order_status(self):
+        """Test updating order status."""
+        # Create and save an order
+        order = MarketOrder(
+            id=None, order_id=5001, strategy_id=1,
+            order_contract_id=3, order_symbol="AAPL", order_status="PreSubmitted",
+            order_quantity=100, order_currency="USD",
+            order_price=150.00, order_type="MKT",
+            order_action="BUY", order_parent_id=None
+        )
+        
+        self.market_order_dto.save_market_order(order)
+        
+        # Verify initial status
+        retrieved = self.market_order_dto.get_market_order_by_id(5001)
+        self.assertEqual(retrieved.order_status, "PreSubmitted")
+        
+        # Update status
+        self.market_order_dto.update_market_order_status(5001, "Filled")
+        
+        # Verify updated status
+        updated = self.market_order_dto.get_market_order_by_id(5001)
+        self.assertEqual(updated.order_status, "Filled")
+    
+    def test_get_orders_by_create_date(self):
+        """Test retrieving orders created after a specific date."""
+        # Create orders
+        orders = [
+            MarketOrder(
+                id=None, order_id=6001, strategy_id=1,
+                order_contract_id=3, order_symbol="AAPL", order_status="NEW",
+                order_quantity=100, order_currency="USD",
+                order_price=150.00, order_type="MKT",
+                order_action="BUY", order_parent_id=None
+            )
+        ]
+        
+        for order in orders:
+            self.market_order_dto.save_market_order(order)
+        
+        # Get orders created today (should find the order)
+        today = datetime.now().strftime('%Y-%m-%d')
+        retrieved = self.market_order_dto.get_market_orders_by_create_date(today)
+        self.assertGreater(len(retrieved), 0)
+        
+        # Get orders created in the future (should find none)
+        future = "2030-01-01"
+        retrieved = self.market_order_dto.get_market_orders_by_create_date(future)
+        self.assertEqual(len(retrieved), 0)
+    
+    def test_order_with_parent_id(self):
+        """Test saving and retrieving orders with parent-child relationship."""
+        # Create parent order
+        parent_order = MarketOrder(
+            id=None, order_id=7001, strategy_id=1,
+            order_contract_id=3, order_symbol="AAPL", order_status="Filled",
+            order_quantity=100, order_currency="USD",
+            order_price=150.00, order_type="MKT",
+            order_action="BUY", order_parent_id=None
+        )
+        
+        self.market_order_dto.save_market_order(parent_order)
+        
+        # Create child order
+        child_order = MarketOrder(
+            id=None, order_id=7002, strategy_id=1,
+            order_contract_id=3, order_symbol="AAPL", order_status="PreSubmitted",
+            order_quantity=100, order_currency="USD",
+            order_price=155.00, order_type="LMT",
+            order_action="SELL", order_parent_id=7001
+        )
+        
+        self.market_order_dto.save_market_order(child_order)
+        
+        # Retrieve and verify relationship
+        retrieved_child = self.market_order_dto.get_market_order_by_id(7002)
+        self.assertEqual(retrieved_child.order_parent_id, 7001)
+
 
 if __name__ == "__main__":
     unittest.main()

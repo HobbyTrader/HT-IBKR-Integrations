@@ -21,7 +21,19 @@ class StrategyDTO:
         raw_tags = row[2]
         details_json = row[3]
         logger.debug(f"[StrategyDTO] - Strategy details JSON: {details_json}")
-        details_obj = StrategyDetail.from_json(details_json)
+        
+        is_empty_details = (
+            details_json is None
+            or details_json == ""
+            or details_json == {}
+            or details_json == "{}"
+            or (isinstance(details_json, str) and details_json.strip() == "{}")
+        )
+        
+        if not is_empty_details:
+            details_obj = StrategyDetail.from_json(details_json)
+        else:
+            details_obj = None
         
         if isinstance(raw_tags, str):
             # Handle string like "['US', 'STOCK']" or "US,STOCK"

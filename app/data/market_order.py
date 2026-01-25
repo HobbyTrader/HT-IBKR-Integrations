@@ -1,7 +1,7 @@
-import datetime
 import logging
 
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from vendor.ibapi.order import Order
 
