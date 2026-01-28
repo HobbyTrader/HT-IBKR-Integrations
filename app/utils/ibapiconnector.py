@@ -2,8 +2,10 @@ import threading
 import time
 import logging
 
-from vendor.ibapi.wrapper import EWrapper
-from vendor.ibapi.client import EClient
+#from vendor.ibapi.wrapper import EWrapper
+#from vendor.ibapi.client import EClient
+from ibapi.wrapper import EWrapper
+from ibapi.client import EClient
 
 from app.utils import load_config_ibapi
 

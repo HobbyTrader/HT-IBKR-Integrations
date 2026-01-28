@@ -34,7 +34,7 @@ init-db = "app.utils.db_init:initialize_database"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["app*", "vendor*"]
+include = ["app*", "ibapi", "vendor*"]
 
 [tool.setuptools.package-data]
 app = ["config.json", "dto/table_definitions.sql", "strategies/*.json"]

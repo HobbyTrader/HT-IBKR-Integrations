@@ -42,6 +42,8 @@ def get_arguments() -> ScanArguments:
             all_must_match = False
     else:
         logger.info("Starting without arguments.")
+        tags = None
+        all_must_match = False
     
     return ScanArguments(tags=tags, all_must_match=all_must_match)
         

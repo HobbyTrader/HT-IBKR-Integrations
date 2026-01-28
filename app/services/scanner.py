@@ -9,7 +9,8 @@ from app.utils.ibapiconnector import IBApiConnector
 from app.dto.scanner_dto import ScannerDTO
 from app.data.strategy import Strategy
 
-from vendor.ibapi.utils import iswrapper
+# from vendor.ibapi.utils import iswrapper
+from ibapi.utils import iswrapper
 
 logger = logging.getLogger(__name__)
 

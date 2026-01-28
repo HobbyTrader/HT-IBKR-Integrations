@@ -4,8 +4,10 @@ import logging
 from dataclasses import dataclass, field
 from typing import List
 
-from vendor.ibapi.common import BarData
-from vendor.ibapi.contract import Contract
+#from vendor.ibapi.common import BarData
+#from vendor.ibapi.contract import Contract
+from ibapi.common import BarData
+from ibapi.contract import Contract
 
 logger = logging.getLogger(__name__)
 
