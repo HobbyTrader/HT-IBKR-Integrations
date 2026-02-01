@@ -1,7 +1,7 @@
 import logging
 
 from app.utils.ibapiconnector import IBApiConnector
-from vendor.ibapi.utils import iswrapper
+from ibapi.utils import iswrapper
 
 logger = logging.getLogger(__name__)
 

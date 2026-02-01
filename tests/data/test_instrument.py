@@ -2,8 +2,8 @@ import unittest
 import json
 from unittest.mock import Mock, patch
 
-from vendor.ibapi.common import BarData
-from vendor.ibapi.contract import Contract
+from ibapi.common import BarData
+from ibapi.contract import Contract
 
 from app.data.instrument import Instrument
 
@@ -334,6 +334,55 @@ class TestInstrument(unittest.TestCase):
         instrument.set_volume_buy(100)
         
         self.assertEqual(instrument.volume_buy, 100)
+
+
+    # ------------------------------------------------------------------ store_history
+
+    @patch("app.data.instrument.HistoryDTO")
+    @patch("app.data.instrument.History.from_bar")
+    def test_store_history_calls_dto_for_each_bar(self, mock_from_bar, mock_history_dto):
+        """Test store_history calls HistoryDTO.save_history for each bar."""
+        bar1 = Mock(spec=BarData)
+        bar1.date = "2024-01-01 09:30"
+        bar1.open = 100.0
+        bar1.high = 105.0
+        bar1.low = 99.0
+        bar1.close = 102.0
+        bar1.volume = 1000
+        bar1.wap = 101.0
+
+        bar2 = Mock(spec=BarData)
+        bar2.date = "2024-01-02 09:30"
+        bar2.open = 102.0
+        bar2.high = 106.0
+        bar2.low = 101.0
+        bar2.close = 104.0
+        bar2.volume = 1100
+        bar2.wap = 103.0
+
+        instrument = Instrument(
+            id=1,
+            symbol="AAPL",
+            sectype="STK",
+            currency="USD",
+            exchange="SMART",
+        )
+        instrument.daily_history = [bar1, bar2]
+
+        fake_hist1 = Mock()
+        fake_hist2 = Mock()
+        mock_from_bar.side_effect = [fake_hist1, fake_hist2]
+
+        instrument.store_history()
+
+        self.assertEqual(mock_from_bar.call_count, 2)
+        mock_from_bar.assert_any_call(1, "AAPL", bar1)
+        mock_from_bar.assert_any_call(1, "AAPL", bar2)
+
+        dto_instance = mock_history_dto.return_value
+        self.assertEqual(dto_instance.save_history.call_count, 2)
+        dto_instance.save_history.assert_any_call(fake_hist1)
+        dto_instance.save_history.assert_any_call(fake_hist2)
 
 
 if __name__ == "__main__":

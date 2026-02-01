@@ -20,7 +20,8 @@ requires-python = ">=3.12"
 dependencies = [
     "pandas",
     "protobuf (==5.29.3)",
-    "schedule>=1.2.0"
+    "schedule>=1.2.0",
+    "ibapi>=10.37"
 ]
 
 [build-system]
@@ -31,11 +32,11 @@ build-backend = "setuptools.build_meta"
 scan = "app.main:main"
 loadstrategy = "app.loadstrategy:main"
 init-db = "app.utils.db_init:initialize_database"
+close-positions = "app.close_open_positions:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["app*", "vendor*"]
+include = ["app*"]
 
 [tool.setuptools.package-data]
 app = ["config.json", "dto/table_definitions.sql", "strategies/*.json"]
-vendor= ["ibapi/**/*"]

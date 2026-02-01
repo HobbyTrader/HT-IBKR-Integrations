@@ -5,8 +5,8 @@ from typing import List, Any
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, time
 
-from vendor.ibapi.scanner import ScannerSubscription
-from vendor.ibapi.tag_value import TagValue
+from ibapi.scanner import ScannerSubscription
+from ibapi.tag_value import TagValue
 from app.data.instrument import Instrument
 from app.utils.timeencoder import TimeEncoder
 
@@ -125,7 +125,7 @@ class Strategy:
                        int(float(avg_volume) * float(self.details.max_volume_percent) / 100.0),
                        int(float(self.details.max_price_per_trade) / float(price)))
         logger.info(f"[Strategy] - Calculated quantity to invest: {quantity} shares based on max investment of {avg_volume} and market price {price}.")
-        return quantity
+        return quantity       
     
     def apply_strategy_on_instrument(self, instrument: Instrument):
         instrument.strategy_id = self.id
@@ -159,6 +159,7 @@ class Strategy:
             instrument.set_take_profit_price(self.get_take_profit_price(instrument.market_price))
             
             instrument.is_candidate = True
+            instrument.store_history()
         else:
             logger.debug(f"[Instrument] - {instrument.symbol} does not meet strategy criteria for order candidacy due to insufficient price increase.")
             instrument.is_candidate = False

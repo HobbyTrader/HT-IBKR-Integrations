@@ -2,8 +2,8 @@ import threading
 import time
 import logging
 
-from vendor.ibapi.wrapper import EWrapper
-from vendor.ibapi.client import EClient
+from ibapi.wrapper import EWrapper
+from ibapi.client import EClient
 
 from app.utils import load_config_ibapi
 
@@ -23,7 +23,7 @@ class IBApiConnector(EWrapper, EClient):
         self.connection_thread = None
         self._is_connected = False
 
-       # ------------------------------------------------------
+    # ------------------------------------------------------
     # Connection management
     # -----------------------------------------------------
     def open_connection(self, clientId: int = None):

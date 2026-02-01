@@ -329,6 +329,7 @@ class TestStrategy(unittest.TestCase):
         )
         instrument.set_stop_loss_price = Mock()
         instrument.set_take_profit_price = Mock()
+        instrument.store_history = Mock()
         
         return instrument
 
@@ -337,29 +338,23 @@ class TestStrategy(unittest.TestCase):
         strategy = Strategy.from_json(self.valid_strategy_dict)
         strategy.id = 1
         
-        # Create mock bars
+        # Create mock bars where avg wap is NOT above open price
         bars = [
-            Mock(open=100.0, wap=100.5, volume=50),
-            Mock(open=100.0, wap=100.3, volume=50),
-            Mock(open=100.0, wap=100.2, volume=50),
-            Mock(open=100.0, wap=100.1, volume=50)
+            Mock(open=100.0, wap=99.5, volume=50),
+            Mock(open=100.0, wap=99.3, volume=50),
+            Mock(open=100.0, wap=99.2, volume=50),
+            Mock(open=100.0, wap=99.1, volume=50)
         ]
         
         instrument = self._create_mock_instrument_with_history(
             bars, avg_volume=50.0, market_price=1, volume_buy=1
         )
-        # instrument = Mock(spec=Instrument)
-        # instrument.daily_history = [bar1, bar2, bar3, bar4]
-        # instrument.symbol = "TEST"
-        # # instrument.avg_volume = 1000.0  
-        # instrument.market_price = 50.0   
-        # instrument.volume_buy = 10
-        # instrument.is_candidate = False
         
         strategy.apply_strategy_on_instrument(instrument)
         
         self.assertFalse(instrument.is_candidate)
-        
+        instrument.store_history.assert_not_called()
+
     def test_strategy_apply_strategy_on_instrument_candidate(self):
         """Test with helper function."""
         strategy = Strategy.from_json(self.valid_strategy_dict)
@@ -379,6 +374,7 @@ class TestStrategy(unittest.TestCase):
         strategy.apply_strategy_on_instrument(instrument)
         
         self.assertTrue(instrument.is_candidate)
+        instrument.store_history.assert_called_once()
 
 
 if __name__ == "__main__":

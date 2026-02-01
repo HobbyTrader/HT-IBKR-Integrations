@@ -6,8 +6,8 @@ from app.utils.ibapiconnector import IBApiConnector
 from app.data.instrument import Instrument
 # from app.dto.market_dto import marketDTO
 
-from vendor.ibapi.client import *
-from vendor.ibapi.utils import iswrapper
+from ibapi.client import *
+from ibapi.utils import iswrapper
 
 logger = logging.getLogger(__name__)
 

@@ -5,8 +5,8 @@ import time
 import itertools
 
 from app.utils.ibapiconnector import IBApiConnector
-from vendor.ibapi.client import EClient
-from vendor.ibapi.wrapper import EWrapper
+from ibapi.client import EClient
+from ibapi.wrapper import EWrapper
 
 
 class TestIBApiConnector(unittest.TestCase):
