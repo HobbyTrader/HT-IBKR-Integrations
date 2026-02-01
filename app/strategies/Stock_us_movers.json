@@ -1,0 +1,44 @@
+{
+    "strategies": [
+        {
+            "name": "US Stock Movers Up",
+            "tags": ["US", "STOCK", "MOVERS_UP"],
+            "details": {
+                "instrument": "STK",
+                "locationCode": "STK.NASDAQ",
+                "scanCode": "TOP_PERC_GAIN",
+                "scan_options": [],
+                "filter_options": [
+                    {
+                        "name": "volumeAbove",
+                        "value": "100000"
+                    },
+                    {
+                        "name": "priceAbove",
+                        "value": "2"
+                    },
+                    {
+                        "name": "priceBelow",
+                        "value": "50"
+                    },
+                    {
+                        "name": "changePercAbove",
+                        "value": "5"
+                    }
+                ],
+                "maxResults": 20,
+                "minutes_to_order": 3,
+                "max_shares_to_invest_per_trade": 1000,
+                "min_shares_to_invest_per_trade": 10,
+                "max_price_per_trade": 2000,
+                "min_price_per_trade": 500,
+                "max_trades_per_day": 5,
+                "opening_hours": ["09:30:00","16:00:00"],
+                "max_volume_percent": 1.0,
+                "stop_loss_percent": 97.0,
+                "take_profit_percent": 105.0,
+                "increase_position_candidate_percentage": 0.5
+            }
+        }
+    ]
+}
