@@ -9,10 +9,10 @@ from app.dto.market_order_dto import MarketOrderDTO
 
 from app.utils.ibapiconnector import IBApiConnector
 
-from vendor.ibapi.order_cancel import OrderCancel
-from vendor.ibapi.utils import iswrapper
-from vendor.ibapi.order import Order   
-from vendor.ibapi.contract import Contract
+from ibapi.order_cancel import OrderCancel
+from ibapi.utils import iswrapper
+from ibapi.order import Order   
+from ibapi.contract import Contract
 
 logger = logging.getLogger(__name__)
 

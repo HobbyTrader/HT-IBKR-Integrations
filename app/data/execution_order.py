@@ -3,7 +3,7 @@ import logging
 
 from dataclasses import dataclass, field
 
-from vendor.ibapi.execution import Execution
+from ibapi.execution import Execution
 
 from app.data.instrument import Instrument   
 

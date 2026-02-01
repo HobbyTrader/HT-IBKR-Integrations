@@ -5,8 +5,8 @@ from typing import List, Any
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, time
 
-from vendor.ibapi.scanner import ScannerSubscription
-from vendor.ibapi.tag_value import TagValue
+from ibapi.scanner import ScannerSubscription
+from ibapi.tag_value import TagValue
 from app.data.instrument import Instrument
 from app.utils.timeencoder import TimeEncoder
 

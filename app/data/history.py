@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from app.utils.date_helper import _parse_datetime
-from vendor.ibapi.common import BarData
+from ibapi.common import BarData
 
 logger = logging.getLogger(__name__)
 

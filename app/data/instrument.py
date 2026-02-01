@@ -5,8 +5,8 @@ from dataclasses import dataclass, field
 from typing import List
 
 from app.dto.history_dto import HistoryDTO
-from vendor.ibapi.common import BarData
-from vendor.ibapi.contract import Contract
+from ibapi.common import BarData
+from ibapi.contract import Contract
 from app.data.history import History
 
 logger = logging.getLogger(__name__)
