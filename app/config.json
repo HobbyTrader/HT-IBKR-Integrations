@@ -15,5 +15,15 @@
     "loglevel": "DEBUG",
     "consolelevel": "INFO",
     "backupcount": 5
+  },
+  "scheduler": {
+    "scanner": {
+      "enabled": true,
+      "interval": 10
+    },
+    "watcher": {
+      "enabled": true,
+      "interval": 60
+    }
   }
 }

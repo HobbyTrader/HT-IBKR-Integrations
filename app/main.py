@@ -18,9 +18,13 @@ from app.services.market import MarketService
 from app.services.order import OrderService
 
 from app.utils.logger import LoggerManager
+from app.utils import load_config_scheduler
 
 LoggerManager()
 logger = logging.getLogger(__name__)
+
+_stop_event = threading.Event()
+_count = 0
     
 @dataclass(frozen=True)
 class ScanArguments:
@@ -76,8 +80,21 @@ def update_scanner_result_candidate(exec_key: str, instrument: Instrument, scann
         args=(exec_key, instrument.id, instrument.is_candidate)
     )
     t.start()
-            
+
+def clean_non_candidates(exec_key: str, scanner_dto: Optional[ScannerDTO] = None) -> None:
+    if scanner_dto is None:
+        scanner_dto = ScannerDTO()
+        
+    scanner_dto.clean_non_candidates(exec_key)
+   
+    
+def scheduler_stop():
+    logger.info("Scheduler stop requested.")
+    _stop_event.set()
+                
 def main():  
+    global _count
+    _count = _count + 1
     scanner_dto = ScannerDTO()
     strategy_dto = StrategyDTO()  
     logger.info("[MAIN] - Starting HT-IBKR-Integrations Application")
@@ -121,9 +138,33 @@ def main():
                 
                 # Stop if reached max candidates defined in strategy - MAX_TRADES_PER_DAY
                 if(len(instrument_candidates) >= strategy.details.max_trades_per_day):
+                    logger.info(f"Reached max candidates for strategy {strategy.id} - {strategy.name}. Stopping processing more scanner results.")
+                    scheduler_stop()
                     break
+        
+        clean_non_candidates()
+        
+
+def run_scheduler():
+    config_scheduler_scanner = load_config_scheduler().get("scanner", {})
+    logger.info(f"Loaded scheduler configuration for scanner: {config_scheduler_scanner}")
+    
+    if not config_scheduler_scanner.get("enabled", False):
+        logger.info("Scanner scheduler is disabled in configuration. Only 1 execution will be performed.")
+        main()
+        scheduler_stop()
+        return
+    
+    interval = config_scheduler_scanner.get("interval", 60)
+    logger.info(f"Starting scheduler with interval {interval} seconds.")
+    
+    while not _stop_event.is_set():
+        main()
+        logger.info(f"Scheduler sleeping for {interval} seconds...")
+        _stop_event.wait(interval)
+        
                 
     logger.info("HT-IBKR-Integrations Application Finished")
-    
+            
 if __name__ == "__main__":
-    main()
+    run_scheduler()

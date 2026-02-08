@@ -50,6 +50,16 @@ class ScannerDTO:
             """UPDATE scanner_results SET is_order_candidate = ?, update_date = CURRENT_TIMESTAMP WHERE exec_key = ? AND contract_id = ?""",
             (is_order_candidate, exec_key, contract_id))
         self.dbconn.conn.commit()
+        
+    # ============================================================================
+    # UPDATE METHODS (UPDATE)
+    # ============================================================================     
+    def clean_non_candidates(self, exec_key):
+        cursor = self.dbconn.conn.cursor()
+        cursor.execute(
+            """DELETE FROM scanner_results WHERE is_order_candidate = 0 AND exec_key = ?""",
+            (exec_key,))
+        self.dbconn.conn.commit()
     
     # ============================================================================
     # GET METHODS (SELECT)

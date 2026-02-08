@@ -162,3 +162,14 @@ or
 ```bash
 *python -m pip install ht_ibkr_integrations-0.2.0.tar.gz
 ```
+
+## Package execution
+
+```bash
+*python..... *
+```
+
+---
+
+# Strategie Definition
+
