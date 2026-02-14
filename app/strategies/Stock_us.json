@@ -43,7 +43,19 @@
                 "max_volume_percent": 1.0,
                 "stop_loss_percent": 95.0,
                 "take_profit_percent": 110.0,
-                "increase_position_candidate_percentage": 0.5
+                "increase_position_candidate_percentage": 0.5,
+                "partial_sell_rules": [
+                    {
+                        "sell_percentage": 30.0,
+                        "quantity_percentage": 30.0,
+                        "stop_loss_adjustment_percentage": 0.0
+                    },
+                    {
+                        "sell_percentage": 70.0,
+                        "quantity_percentage": 40.0,
+                        "stop_loss_adjustment_percentage": 5.0
+                    }
+                ]
             }
         }
     ]

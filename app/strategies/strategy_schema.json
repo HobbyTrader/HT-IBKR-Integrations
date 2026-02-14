@@ -186,6 +186,38 @@
                                 "description": "Percentage threshold to consider increasing position in a candidate (e.g., 0.8 for 0.8%)",
                                 "minimum": 0,
                                 "maximum": 100
+                            },
+                            "partial_sell_rules": {
+                                "type": "array",
+                                "description": "Rules for partial selling of positions. Used by the watcher to check if it needs to partially sell positions when target is reached and adjust stop loss accordingly.",
+                                "items": {
+                                    "type": "object",
+                                    "required": [
+                                        "sell_percentage",
+                                        "quantity_percentage",
+                                        "stop_loss_adjustment_percentage"
+                                    ],
+                                    "properties": {
+                                        "sell_percentage": {
+                                            "type": "number",
+                                            "description": "Percentage of target already reached (e.g., 30.0 for 30%)",
+                                            "minimum": 0,
+                                            "maximum": 100
+                                        },
+                                        "quantity_percentage": {
+                                            "type": "number",
+                                            "description": "Percentage of quantity to sell at specified target (e.g., 30.0 for 30%)",
+                                            "minimum": 0,
+                                            "maximum": 100
+                                        },
+                                        "stop_loss_adjustment_percentage": {
+                                            "type": "number",
+                                            "description": "Percentage to adjust stop loss after partial sell (e.g., 5.0 for 5% increase)",
+                                            "minimum": 0,
+                                            "maximum": 100
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

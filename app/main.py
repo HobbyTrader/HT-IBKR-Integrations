@@ -24,7 +24,7 @@ LoggerManager()
 logger = logging.getLogger(__name__)
 
 _stop_event = threading.Event()
-_count = 0
+_instrument_candidates = []
     
 @dataclass(frozen=True)
 class ScanArguments:
@@ -87,14 +87,18 @@ def clean_non_candidates(exec_key: str, scanner_dto: Optional[ScannerDTO] = None
         
     scanner_dto.clean_non_candidates(exec_key)
    
-    
 def scheduler_stop():
     logger.info("Scheduler stop requested.")
     _stop_event.set()
-                
+
+def update_order_status():
+    with OrderService() as order_serv:
+        order_serv.get_active_orders()
+        order_serv.get_completed_orders()
+                      
 def main():  
-    global _count
-    _count = _count + 1
+    global _instrument_candidates
+    
     scanner_dto = ScannerDTO()
     strategy_dto = StrategyDTO()  
     logger.info("[MAIN] - Starting HT-IBKR-Integrations Application")
@@ -104,7 +108,6 @@ def main():
     strategies = get_strategies(arguments.tags, arguments.all_must_match, strategy_dto)
     
     for strategy in strategies:
-        instrument_candidates = []
         exec_key = generate_key()
         logger.info(f"STRATEGY - {strategy.id} {strategy.name} - EXEC KEY - {exec_key}")
         
@@ -120,7 +123,11 @@ def main():
             
         for instrument in scanner_results:
             logger.info(f"SCANNER RESULT - {instrument}")
-                      
+            
+            # Check if instrument already candidate previously in the day to avoid placing multiple orders for the same instrument
+            if instrument in _instrument_candidates:
+                logger.info(f"Instrument {instrument.symbol} already processed as candidate for strategy {strategy.name}. Skipping.")
+                continue
             # Get market data for all scanner results (History, etc) and set candidate status
             get_instrument_market_data(instrument)
                 
@@ -131,18 +138,19 @@ def main():
                 
             if(instrument.is_candidate):                
                 # Place orders for the candidates (specify any clientId if needed to separate order streams)
-                with OrderService(1) as order_serv:
+                with OrderService() as order_serv:
                     order_serv.place_bracket_order(instrument)
                     
-                instrument_candidates.append(instrument)
+                _instrument_candidates.append(instrument)
                 
                 # Stop if reached max candidates defined in strategy - MAX_TRADES_PER_DAY
-                if(len(instrument_candidates) >= strategy.details.max_trades_per_day):
+                if(len(_instrument_candidates) >= strategy.details.max_trades_per_day):
                     logger.info(f"Reached max candidates for strategy {strategy.id} - {strategy.name}. Stopping processing more scanner results.")
                     scheduler_stop()
                     break
         
         clean_non_candidates()
+        update_order_status()
         
 
 def run_scheduler():

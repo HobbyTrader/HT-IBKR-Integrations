@@ -21,6 +21,7 @@ class OrderService(IBApiConnector):
         super().__init__()
         self.order_events = {}
         self.CLIENT_ID = clientId
+        self.order_events = {}
         self.order_dto = MarketOrderDTO()
         logger.info(f"[OrderService] - Order initialzed - Client ID: {clientId}")
         
@@ -85,6 +86,14 @@ class OrderService(IBApiConnector):
         return super().openOrder(orderId, contract, order, orderState)
     
     @iswrapper
+    def openOrderEnd(self):
+        event = self.order_events.get("Open")
+        if event:
+            event.set()
+        logger.info(f"[OrderService] - Open Order End.")
+        return super().openOrderEnd()
+    
+    @iswrapper
     def orderStatus(self, orderId, status, filled, remaining, avgFillPrice, permId,
                     parentId, lastFillPrice, clientId, whyHeld, mktCapPrice):
         logger.info(f"[OrderService] - Order Status. orderId: {orderId}, status: {status}, filled: {filled}, remaining: {remaining}, avgFillPrice: {avgFillPrice}, permId: {permId}, parentId: {parentId}, lastFillPrice: {lastFillPrice}, clientId: {clientId}, whyHeld: {whyHeld}, mktCapPrice: {mktCapPrice}.")
@@ -115,6 +124,9 @@ class OrderService(IBApiConnector):
     
     @iswrapper
     def completedOrdersEnd(self):
+        event = self.order_events.get("Complete")
+        if event:
+            event.set()
         logger.info(f"[OrderService] - Completed Orders End.")
         return super().completedOrdersEnd()
     
@@ -254,15 +266,25 @@ class OrderService(IBApiConnector):
         self.order_events.pop(sellOrder.orderId, None)
 
     def get_active_orders(self):
+        evt = threading.Event()
+        self.order_events["Open"] = evt
         # Placeholder for fetching active orders from IBKR
         logger.info("[OrderService] - Fetching active orders...")
         self.reqAllOpenOrders() 
         
-    def get_comlpeted_orders(self):
+        evt.wait(timeout=30)
+        self.order_events.pop("Open", None)
+        
+    def get_completed_orders(self):
+        evt = threading.Event()
+        self.order_events["Complete"] = evt
         # Placeholder for fetching completed orders from IBKR
         logger.info("[OrderService] - Fetching completed orders...")
-        self.reqCompletedOrders()
+        self.reqCompletedOrders(False)  
         
+        evt.wait(timeout=30)
+        self.order_events.pop("Complete", None)
+            
     def cancel_all_orders(self):
         # Placeholder for cancelling all orders in IBKR
         logger.info("[OrderService] - Cancelling all orders...")
