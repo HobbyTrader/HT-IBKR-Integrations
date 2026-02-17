@@ -99,7 +99,16 @@ class TestScannerDTO(unittest.TestCase):
         self.assertIn("is_order_candidate = 1 and exec_key = ?", sql)
         self.assertEqual(params, ("KEY",))
         mock_r2i.assert_called_once_with(rows)
+        
+    def test_get_contract_id_by_symbol_returns_id_and_none(self):
+        # First call returns a row
+        self.mock_cursor.fetchone.side_effect = [(12345,), None]
 
+        contract_id = self.dto.get_contract_id_by_symbol("AAPL")
+        self.assertEqual(contract_id, 12345)
+
+        contract_id_none = self.dto.get_contract_id_by_symbol("MISSING")
+        self.assertIsNone(contract_id_none)
 
 if __name__ == "__main__":
     unittest.main()
@@ -219,3 +228,20 @@ class TestScannerDTOIntegration(unittest.TestCase):
 
         out = self.dto.get_details()
         self.assertEqual(len(out), 2)
+        
+    def test_clean_non_candidates_deletes_and_commits(self):
+        exec_key = "ABC"
+        self.dto.save_details(reqId=1, rank=1, contractDetails=Mock(contract=Mock(conId=1, symbol="AAPL", secType="STK", currency="USD", tradingClass="NMS", exchange="NASDAQ")), exec_key=exec_key)
+        self.dto.save_details(reqId=1, rank=2, contractDetails=Mock(contract=Mock(conId=2, symbol="TSLA", secType="STK", currency="USD", tradingClass="NMS", exchange="NASDAQ")), exec_key=exec_key)
+        self.dto.set_order_candidate(exec_key=exec_key, contract_id=1, is_order_candidate=1)
+        
+        self.dto.clean_non_candidates(exec_key)
+
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM scanner_results WHERE exec_key = ?", (exec_key,))
+        count = cursor.fetchone()[0]
+        self.assertEqual(count, 1)
+        
+        
+
+    

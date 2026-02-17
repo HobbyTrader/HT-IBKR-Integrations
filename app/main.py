@@ -149,7 +149,7 @@ def main():
                     scheduler_stop()
                     break
         
-        clean_non_candidates()
+        clean_non_candidates(exec_key, scanner_dto)
         update_order_status()
         
 
