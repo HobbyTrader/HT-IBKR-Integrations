@@ -2,8 +2,13 @@ import unittest
 import sqlite3
 from unittest.mock import Mock, patch
 
-from app.main import TERMINAL_RETRYABLE_BUY_STATUSES, has_buy_order_today
+from app.main import (
+    TERMINAL_RETRYABLE_BUY_STATUSES,
+    count_buy_orders_today_for_strategy,
+    has_buy_order_today,
+)
 from app.data.instrument import Instrument
+from app.data.strategy import Strategy
 from app.dto.market_order_dto import MarketOrderDTO
 
 
@@ -16,6 +21,7 @@ class TestMainOrderDuplicationGuard(unittest.TestCase):
             currency="USD",
             exchange="SMART",
         )
+        self.strategy = Strategy(name="US", id=7)
 
     def _build_order(self, order_action: str, order_status: str, order_id: int = 1):
         order = Mock()
@@ -56,6 +62,17 @@ class TestMainOrderDuplicationGuard(unittest.TestCase):
 
         self.assertFalse(has_buy_order_today(self.instrument, dto))
 
+    def test_count_buy_orders_today_for_strategy_counts_non_retryable_buys_only(self):
+        dto = Mock()
+        dto.get_market_orders_by_strategy_today.return_value = [
+            self._build_order("BUY", "Filled", 1),
+            self._build_order("BUY", "Submitted", 2),
+            self._build_order("BUY", "Rejected", 3),
+            self._build_order("SELL", "Filled", 4),
+        ]
+
+        self.assertEqual(count_buy_orders_today_for_strategy(self.strategy, dto), 2)
+
 
 if __name__ == "__main__":
     unittest.main()
@@ -82,6 +99,7 @@ class TestMainOrderDuplicationGuardIntegration(unittest.TestCase):
             currency="USD",
             exchange="SMART",
         )
+        self.strategy = Strategy(name="US", id=1)
 
     def tearDown(self):
         if hasattr(self, "db_patcher"):
@@ -205,3 +223,34 @@ class TestMainOrderDuplicationGuardIntegration(unittest.TestCase):
         )
 
         self.assertFalse(has_buy_order_today(self.instrument, self.market_order_dto))
+
+    def test_count_buy_orders_today_for_strategy_reads_market_orders_table(self):
+        self._insert_market_order(
+            order_id=60001,
+            order_contract_id=self.instrument.id,
+            order_action="BUY",
+            order_status="Filled",
+        )
+        self._insert_market_order(
+            order_id=60002,
+            order_contract_id=self.instrument.id,
+            order_action="BUY",
+            order_status="Submitted",
+        )
+        self._insert_market_order(
+            order_id=60003,
+            order_contract_id=self.instrument.id,
+            order_action="BUY",
+            order_status="Rejected",
+        )
+        self._insert_market_order(
+            order_id=60004,
+            order_contract_id=self.instrument.id,
+            order_action="SELL",
+            order_status="Filled",
+        )
+
+        self.assertEqual(
+            count_buy_orders_today_for_strategy(self.strategy, self.market_order_dto),
+            2,
+        )

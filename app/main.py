@@ -27,7 +27,6 @@ LoggerManager()
 logger = logging.getLogger(__name__)
 
 _stop_event = threading.Event()
-_instrument_candidates = []
 _instrument_candidate_ids = set()
 
 TERMINAL_RETRYABLE_BUY_STATUSES = {"REJECTED", "CANCELLED", "APICANCELLED", "INACTIVE"}
@@ -126,6 +125,19 @@ def has_buy_order_today(instrument: Instrument, market_order_dto: Optional[Marke
 
     return False
 
+
+def count_buy_orders_today_for_strategy(strategy: Strategy, market_order_dto: Optional[MarketOrderDTO] = None) -> int:
+    if market_order_dto is None:
+        market_order_dto = MarketOrderDTO()
+
+    todays_orders = market_order_dto.get_market_orders_by_strategy_today(strategy.id)
+    return sum(
+        1
+        for order in todays_orders
+        if (order.order_action or "").upper() == "BUY"
+        and (order.order_status or "").upper() not in TERMINAL_RETRYABLE_BUY_STATUSES
+    )
+
 def build_instrument_payload_b64(instrument: Instrument) -> str:
     payload_json = instrument.to_json()
     return base64.urlsafe_b64encode(payload_json.encode("utf-8")).decode("ascii")
@@ -156,7 +168,6 @@ def launch_asset_watcher(instrument: Instrument, strategy: Strategy) -> None:
     )
                           
 def main():  
-    global _instrument_candidates
     global _instrument_candidate_ids
     
     scanner_dto = ScannerDTO()
@@ -171,6 +182,21 @@ def main():
     for strategy in strategies:
         exec_key = generate_key()
         logger.info(f"STRATEGY - {strategy.id} {strategy.name} - EXEC KEY - {exec_key}")
+        placed_orders_today = count_buy_orders_today_for_strategy(strategy, market_order_dto)
+        logger.info(
+            "Strategy %s has %s BUY orders today (limit=%s).",
+            strategy.name,
+            placed_orders_today,
+            strategy.details.max_trades_per_day,
+        )
+
+        if placed_orders_today >= strategy.details.max_trades_per_day:
+            logger.info(
+                "Strategy %s already reached max_trades_per_day (%s). Skipping strategy run.",
+                strategy.name,
+                strategy.details.max_trades_per_day,
+            )
+            continue
         
         # TODO: Add check on opening hours of the strategy to skip if outside allowed time
         # TODO: Add check on max trades per day already placed and keep track of trades placed today
@@ -184,6 +210,14 @@ def main():
             
         for instrument in scanner_results:
             logger.info(f"SCANNER RESULT - {instrument}")
+
+            if placed_orders_today >= strategy.details.max_trades_per_day:
+                logger.info(
+                    "Reached max_trades_per_day for strategy %s (%s). Stopping scanner processing for this strategy.",
+                    strategy.name,
+                    strategy.details.max_trades_per_day,
+                )
+                break
 
             # Check if instrument already has a BUY order in market_orders today.
             if has_buy_order_today(instrument, market_order_dto):
@@ -214,13 +248,16 @@ def main():
                         logger.warning(f"Order for {instrument.symbol} was rejected. Asset watcher will not be started.")
                     
                 if order_placed:
-                    _instrument_candidates.append(instrument)
                     _instrument_candidate_ids.add(instrument.id)
+                    placed_orders_today += 1
                 
                 # Stop if reached max candidates defined in strategy - MAX_TRADES_PER_DAY
-                if(len(_instrument_candidates) >= strategy.details.max_trades_per_day):
-                    logger.info(f"Reached max candidates for strategy {strategy.id} - {strategy.name}. Stopping processing more scanner results.")
-                    scheduler_stop()
+                if placed_orders_today >= strategy.details.max_trades_per_day:
+                    logger.info(
+                        "Reached max_trades_per_day for strategy %s (%s). Stopping processing more scanner results.",
+                        strategy.name,
+                        strategy.details.max_trades_per_day,
+                    )
                     break
         
         clean_non_candidates(exec_key, scanner_dto)
