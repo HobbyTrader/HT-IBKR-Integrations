@@ -14,6 +14,7 @@ from app.data.instrument import Instrument
 
 from app.dto.strategy_dto import StrategyDTO
 from app.dto.scanner_dto import ScannerDTO
+from app.dto.market_order_dto import MarketOrderDTO
 
 from app.services.scanner import ScannerService
 from app.services.market import MarketService
@@ -27,6 +28,9 @@ logger = logging.getLogger(__name__)
 
 _stop_event = threading.Event()
 _instrument_candidates = []
+_instrument_candidate_ids = set()
+
+TERMINAL_RETRYABLE_BUY_STATUSES = {"REJECTED", "CANCELLED", "APICANCELLED", "INACTIVE"}
     
 @dataclass(frozen=True)
 class ScanArguments:
@@ -98,6 +102,30 @@ def update_order_status():
         order_serv.get_active_orders()
         order_serv.get_completed_orders()
 
+
+def has_buy_order_today(instrument: Instrument, market_order_dto: Optional[MarketOrderDTO] = None) -> bool:
+    if market_order_dto is None:
+        market_order_dto = MarketOrderDTO()
+
+    todays_orders = market_order_dto.get_market_orders_by_contract_id_today(instrument.id)
+    for order in todays_orders:
+        if (order.order_action or "").upper() != "BUY":
+            continue
+
+        order_status = (order.order_status or "").upper()
+        if order_status in TERMINAL_RETRYABLE_BUY_STATUSES:
+            continue
+
+        logger.info(
+            "Instrument %s already has a BUY order today (order_id=%s, status=%s). Skipping.",
+            instrument.symbol,
+            order.order_id,
+            order.order_status,
+        )
+        return True
+
+    return False
+
 def build_instrument_payload_b64(instrument: Instrument) -> str:
     payload_json = instrument.to_json()
     return base64.urlsafe_b64encode(payload_json.encode("utf-8")).decode("ascii")
@@ -129,9 +157,11 @@ def launch_asset_watcher(instrument: Instrument, strategy: Strategy) -> None:
                           
 def main():  
     global _instrument_candidates
+    global _instrument_candidate_ids
     
     scanner_dto = ScannerDTO()
     strategy_dto = StrategyDTO()  
+    market_order_dto = MarketOrderDTO()
     logger.info("[MAIN] - Starting HT-IBKR-Integrations Application")
     arguments = get_arguments()  
     
@@ -154,9 +184,13 @@ def main():
             
         for instrument in scanner_results:
             logger.info(f"SCANNER RESULT - {instrument}")
+
+            # Check if instrument already has a BUY order in market_orders today.
+            if has_buy_order_today(instrument, market_order_dto):
+                continue
             
             # Check if instrument already candidate previously in the day to avoid placing multiple orders for the same instrument
-            if instrument in _instrument_candidates:
+            if instrument.id in _instrument_candidate_ids:
                 logger.info(f"Instrument {instrument.symbol} already processed as candidate for strategy {strategy.name}. Skipping.")
                 continue
             # Get market data for all scanner results (History, etc) and set candidate status
@@ -181,6 +215,7 @@ def main():
                     
                 if order_placed:
                     _instrument_candidates.append(instrument)
+                    _instrument_candidate_ids.add(instrument.id)
                 
                 # Stop if reached max candidates defined in strategy - MAX_TRADES_PER_DAY
                 if(len(_instrument_candidates) >= strategy.details.max_trades_per_day):
