@@ -1,12 +1,15 @@
+from __future__ import annotations
+
 import logging
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from app.data.numeric_mixin import NumericMixin
-from ibapi.order import Order
 
-from app.data.instrument import Instrument   
+if TYPE_CHECKING:
+    from ibapi.order import Order
 
 
 logger = logging.getLogger(__name__)

@@ -1,15 +1,19 @@
+from __future__ import annotations
+
 import json
 import logging
 
-from typing import List, Any
+from typing import TYPE_CHECKING, Any, List
 from dataclasses import dataclass, asdict, field
 from datetime import datetime, time, timedelta
 
-from ibapi.scanner import ScannerSubscription
-from ibapi.tag_value import TagValue
 from app.data.numeric_mixin import NumericMixin
 from app.data.instrument import Instrument
 from app.utils.timeencoder import TimeEncoder
+
+if TYPE_CHECKING:
+    from ibapi.scanner import ScannerSubscription
+    from ibapi.tag_value import TagValue
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +23,8 @@ class FilterOption(NumericMixin):
     value: str
     
     def to_tagValue(self) -> TagValue:
+        from ibapi.tag_value import TagValue
+
         return TagValue(self.name, self.value)
     
 @dataclass
@@ -84,6 +90,8 @@ class StrategyDetail(NumericMixin):
         return cls(**data)
     
     def to_scannerSubscription(self):
+        from ibapi.scanner import ScannerSubscription
+
         scanSub = ScannerSubscription()
         scanSub.instrument = self.instrument
         scanSub.locationCode = self.locationCode

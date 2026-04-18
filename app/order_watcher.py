@@ -63,7 +63,7 @@ def scheduler_stop():
     _stop_event.set()
 
 def fire_and_forget_close_positions(strategy_id: int | None = None) -> None:
-    cmd = [sys.executable, "app/close_open_positions.py"]
+    cmd = [sys.executable, "-m", "app.close_open_positions"]
     if strategy_id is not None:
         cmd.append(str(strategy_id))
     subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)

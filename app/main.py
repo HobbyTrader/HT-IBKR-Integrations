@@ -111,7 +111,8 @@ def launch_asset_watcher(instrument: Instrument, strategy: Strategy) -> None:
     logger.debug(f"Launching asset watcher for {instrument.symbol} and strategy {strategy.name} - {instrument}")
     cmd = [
         sys.executable,
-        "app/asset_watcher.py",
+        "-m",
+        "app.asset_watcher",
         "--instrument-b64",
         build_instrument_payload_b64(instrument),
         "--strategy-b64",

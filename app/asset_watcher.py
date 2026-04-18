@@ -10,12 +10,21 @@ from typing import Dict, Optional, Set
 from app.data.instrument import Instrument
 from app.data.strategy import Strategy
 from app.dto.market_order_dto import MarketOrderDTO
-from app.services.order import OrderService
 from app.utils import load_config_scheduler
 from app.utils.logger import LoggerManager
 
 LoggerManager("ASSET_WATCHER")
 logger = logging.getLogger(__name__)
+
+try:
+    from app.services.order import OrderService
+    _order_service_import_error = None
+except ModuleNotFoundError as exc:
+    if exc.name == "ibapi":
+        OrderService = None
+        _order_service_import_error = exc
+    else:
+        raise
 
 _stop_event = threading.Event()
 _order_status_cache: Dict[int, str] = {}
@@ -72,6 +81,14 @@ def scheduler_stop() -> None:
 
 
 def update_order_status() -> None:
+    if OrderService is None:
+        logger.error(
+            "Asset watcher cannot refresh order status because ibapi is not available in the current Python environment: %s",
+            _order_service_import_error,
+        )
+        scheduler_stop()
+        return
+
     with OrderService() as order_serv:
         order_serv.get_active_orders()
         order_serv.get_completed_orders()
