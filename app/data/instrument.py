@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import List
 
 from app.dto.history_dto import HistoryDTO
+from app.data.numeric_mixin import NumericMixin
 from ibapi.common import BarData
 from ibapi.contract import Contract
 from app.data.history import History
@@ -12,7 +13,7 @@ from app.data.history import History
 logger = logging.getLogger(__name__)
 
 @dataclass    
-class Instrument:
+class Instrument(NumericMixin):
     id: int
     symbol: str
     sectype: str
@@ -33,9 +34,26 @@ class Instrument:
         if len(row) < 5:
             raise ValueError("Invalid row")
         return cls(*row[:5])
+
+    def to_payload(self) -> dict:
+        return {
+            "id": self._normalize_numeric(self.id),
+            "symbol": self.symbol,
+            "sectype": self.sectype,
+            "currency": self.currency,
+            "exchange": self.exchange,
+            "strategy_id": self._normalize_numeric(self.strategy_id),
+            "daily_history": [],
+            "market_price": self._normalize_numeric(self.market_price),
+            "avg_volume": self._normalize_numeric(self.avg_volume),
+            "stop_loss_price": self._normalize_numeric(self.stop_loss_price),
+            "take_profit_price": self._normalize_numeric(self.take_profit_price),
+            "volume_buy": self._normalize_numeric(self.volume_buy),
+            "is_candidate": self.is_candidate,
+        }
   
     def to_json(self) -> str:
-        return json.dumps(self.__dict__)
+        return json.dumps(self.to_payload(), separators=(",", ":"))
     
     def to_contract(self) -> Contract:
         contract = Contract()

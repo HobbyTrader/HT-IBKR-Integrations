@@ -3,17 +3,18 @@ import logging
 
 from typing import List, Any
 from dataclasses import dataclass, asdict, field
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 from ibapi.scanner import ScannerSubscription
 from ibapi.tag_value import TagValue
+from app.data.numeric_mixin import NumericMixin
 from app.data.instrument import Instrument
 from app.utils.timeencoder import TimeEncoder
 
 logger = logging.getLogger(__name__)
 
 @dataclass
-class FilterOption:
+class FilterOption(NumericMixin):
     name: str
     value: str
     
@@ -21,7 +22,14 @@ class FilterOption:
         return TagValue(self.name, self.value)
     
 @dataclass
-class StrategyDetail:
+class PartialSellRule(NumericMixin):
+    rule_id: int
+    target_percentage: float
+    quantity_percentage: float
+    stop_loss_adjustment_percentage: float
+    
+@dataclass
+class StrategyDetail(NumericMixin):
     instrument: str
     locationCode: str
     scanCode: str
@@ -44,6 +52,7 @@ class StrategyDetail:
     min_open_trade_gap_percentage: float = 0.0
     max_open_trade_gap_percentage: float = 0.0
     increase_position_candidate_percentage: float = 0.0
+    partial_sell_rules: List[PartialSellRule] = field(default_factory=list)
     
     def to_json(self) -> str:
         return json.dumps(asdict(self), cls=TimeEncoder)
@@ -88,7 +97,7 @@ class StrategyDetail:
         return [fo.to_tagValue() for fo in self.filter_options]
     
 @dataclass
-class Strategy:
+class Strategy(NumericMixin):
     name: str
     tags: List[str] = field(default_factory=lambda: [])
     details: StrategyDetail = None
@@ -189,4 +198,18 @@ class Strategy:
             logger.info(f"[Strategy] - Current time {current_time} is outside of market hours ({opening_time} - {closing_time}) for strategy {self.name}.")
             return False
         
+    def is_time_to_sell_before_close(self) -> bool:
+        now = datetime.now()
+        current_time = now.time()
         
+        try:
+            opening_str, closing_str = self.details.opening_hours
+            closing_time = time.fromisoformat(closing_str)
+        except Exception as e:
+            logger.error(f"[Strategy] - Invalid opening hours format for strategy {self.name}: {self.details.opening_hours}. Error: {e}")
+            return False        
+        
+        if current_time >= (datetime.combine(datetime.today(), closing_time) - timedelta(minutes=30)).time():
+            return True 
+        else:
+            return False

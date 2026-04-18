@@ -3,13 +3,14 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from app.data.numeric_mixin import NumericMixin
 from app.utils.date_helper import _parse_datetime
 from ibapi.common import BarData
 
 logger = logging.getLogger(__name__)
 
 @dataclass    
-class History:
+class History(NumericMixin):
     id: int = 0
     instrument_id: int = 0
     symbol: str = ""

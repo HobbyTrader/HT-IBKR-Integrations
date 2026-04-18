@@ -120,6 +120,15 @@ class MarketOrderDTO:
         cursor.execute("SELECT * FROM market_orders WHERE order_contract_id = ? AND DATE(create_date) = DATE('now')", (contract_id,))
         rows = cursor.fetchall()
         return [self.row_to_market_order(row) for row in rows]
+
+    def get_market_orders_by_parent_order(self, parent_order_id) -> List[MarketOrder]:
+        cursor = self.dbconn.conn.cursor()
+        cursor.execute(
+            "SELECT * FROM market_orders WHERE order_id = ? OR order_parent_id = ?",
+            (parent_order_id, parent_order_id),
+        )
+        rows = cursor.fetchall()
+        return [self.row_to_market_order(row) for row in rows]
     
     def get_market_orders_by_status(self, order_status) -> List[MarketOrder]:
         cursor = self.dbconn.conn.cursor()
@@ -139,8 +148,16 @@ class MarketOrderDTO:
     def update_market_order_status(self, order_id, new_status):
         cursor = self.dbconn.conn.cursor()
         cursor.execute(
-            "UPDATE market_orders SET order_status = ?, update_date = CURRENT_TIMESTAMP WHERE order_id = ?",
+            "UPDATE market_orders SET order_status = ?, update_date = CURRENT_TIMESTAMP WHERE order_id = ? AND LOWER(order_status) != 'rejected'",
             (new_status, order_id))
+        self.dbconn.conn.commit()
+
+    def update_related_market_order_status(self, parent_order_id, new_status):
+        cursor = self.dbconn.conn.cursor()
+        cursor.execute(
+            "UPDATE market_orders SET order_status = ?, update_date = CURRENT_TIMESTAMP WHERE order_id = ? OR order_parent_id = ?",
+            (new_status, parent_order_id, parent_order_id),
+        )
         self.dbconn.conn.commit()
         
     

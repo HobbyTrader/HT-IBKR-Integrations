@@ -3,6 +3,7 @@ import logging
 
 from dataclasses import dataclass, field
 
+from app.data.numeric_mixin import NumericMixin
 from ibapi.execution import Execution
 
 from app.data.instrument import Instrument   
@@ -11,7 +12,7 @@ from app.data.instrument import Instrument
 logger = logging.getLogger(__name__)
 
 @dataclass
-class ExecutionOrder:
+class ExecutionOrder(NumericMixin):
     id: int = 0
     exec_id: str = ""
     order_id: int = 0

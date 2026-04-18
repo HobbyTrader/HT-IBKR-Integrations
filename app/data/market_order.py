@@ -3,6 +3,7 @@ import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from app.data.numeric_mixin import NumericMixin
 from ibapi.order import Order
 
 from app.data.instrument import Instrument   
@@ -11,7 +12,7 @@ from app.data.instrument import Instrument
 logger = logging.getLogger(__name__)
 
 @dataclass
-class MarketOrder:
+class MarketOrder(NumericMixin):
     id: int = 0
     order_id: int = 0
     strategy_id: int = 0

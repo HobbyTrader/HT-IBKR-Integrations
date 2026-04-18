@@ -66,7 +66,7 @@ def fire_and_forget_close_positions(strategy_id: int | None = None) -> None:
     cmd = [sys.executable, "app/close_open_positions.py"]
     if strategy_id is not None:
         cmd.append(str(strategy_id))
-    subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
         
 def main():
     strategy_dto = StrategyDTO()
@@ -78,8 +78,7 @@ def main():
            
     for strategy in strategies:
         # Don't check orders if market is already closed
-        check_market_hours = strategy.is_market_open_now()
-        if not check_market_hours:
+        if not strategy.is_market_open_now():
             logger.info(f"Market is closed for strategy {strategy.name}. Skipping order checks and stopping the watcher")
             scheduler_stop()
             break
@@ -98,21 +97,19 @@ def main():
             #Start the close position process in a separate process to avoid blocking the main loop and allow other strategies to be processed
             fire_and_forget_close_positions(strategy.id)
             
-            continue
+        else:
+            update_order_status()  
         
-        update_order_status()  
-        
-        today_strategy_orders = market_order_dto.get_market_orders_by_strategy_today(strategy.id)
-        logger.info(f"Strategy {strategy.name} has {len(today_strategy_orders)} orders today.")
-        
-        for order in today_strategy_orders:
-            logger.info(f"Order ID: {order.order_id}, Contract ID: {order.contract_id}, Status: {order.order_status}")
-            # TODO: Check current market value in order to sell if 30%, 70% of target reached and adapt stop loss and target orders in consequence. See details in strategy.
-            # TODO: Add structure in strategy to define partial sell rules (e.g., sell 50% of position at 30% gain, move stop loss to break even at 30% gain, sell remaining 50% at 70% gain, etc.)
-        # TODO : Get all openned orders and refresh their status (Only 1 call to IBKR API for all orders!!!!!!). can wait for the multiple callbacks
-        # TODO : For each openned order, check if it needs to be modified or cancelled
-        # TODO : For each openned order, check if it has been filled and update positions accordingly
-
+            today_strategy_orders = market_order_dto.get_market_orders_by_strategy_today(strategy.id)
+            logger.info(f"Strategy {strategy.name} has {len(today_strategy_orders)} orders today.")
+            
+            for order in today_strategy_orders:
+                logger.info(f"Order ID: {order.order_id}, Contract ID: {order.contract_id}, Status: {order.order_status}")
+                # TODO: Check current market value in order to sell if 30%, 70% of target reached and adapt stop loss and target orders in consequence. See details in strategy.
+                # TODO: Get initialtarget price from DB.
+                #       Based on the current price sell part of the position. Take the value from the strategy (e.g., sell 50% of position at 30% gain, move stop loss to break even at 30% gain, sell remaining 50% at 70% gain, etc.)
+                #       Adapt stop loss and target orders in consequence. See details in strategy.
+            
         
 def run_scheduler():
     config_scheduler_watcher = load_config_scheduler().get("watcher", {})

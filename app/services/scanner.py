@@ -54,7 +54,7 @@ class ScannerService(IBApiConnector):
         scannerSubscription = strategy.details.to_scannerSubscription()
         scannerOptions = strategy.details.to_scannerOptions()
         filterTagValues = strategy.details.to_tagValueList()
-        request_id = self.nextId()
+        request_id = self.nextRequestId()
         self.scanner_result_event[request_id] = evt
         
         self.reqScannerSubscription(request_id, scannerSubscription, scannerOptions, filterTagValues)

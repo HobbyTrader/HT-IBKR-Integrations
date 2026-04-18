@@ -3,6 +3,8 @@ import string
 import secrets
 import sys
 import threading
+import subprocess
+import base64
 
 from typing import List, Optional
 from dataclasses import dataclass
@@ -95,7 +97,35 @@ def update_order_status():
     with OrderService() as order_serv:
         order_serv.get_active_orders()
         order_serv.get_completed_orders()
-                      
+
+def build_instrument_payload_b64(instrument: Instrument) -> str:
+    payload_json = instrument.to_json()
+    return base64.urlsafe_b64encode(payload_json.encode("utf-8")).decode("ascii")
+
+def build_strategy_payload_b64(strategy: Strategy) -> str:
+    payload_json = strategy.to_json()
+    return base64.urlsafe_b64encode(payload_json.encode("utf-8")).decode("ascii")
+
+def launch_asset_watcher(instrument: Instrument, strategy: Strategy) -> None:
+    logger.info(f"Launching asset watcher for")
+    logger.debug(f"Launching asset watcher for {instrument.symbol} and strategy {strategy.name} - {instrument}")
+    cmd = [
+        sys.executable,
+        "app/asset_watcher.py",
+        "--instrument-b64",
+        build_instrument_payload_b64(instrument),
+        "--strategy-b64",
+        build_strategy_payload_b64(strategy),
+    ]
+    subprocess.Popen(
+        cmd,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+        close_fds=True,
+    )
+                          
 def main():  
     global _instrument_candidates
     
@@ -139,9 +169,17 @@ def main():
             if(instrument.is_candidate):                
                 # Place orders for the candidates (specify any clientId if needed to separate order streams)
                 with OrderService() as order_serv:
-                    order_serv.place_bracket_order(instrument)
+                    logger.info(f"Placing order for {instrument.symbol} for strategy {strategy.name}")
+                    order_placed = order_serv.place_bracket_order(instrument)
+                    logger.info(f"Order placed for {instrument.symbol} for strategy {strategy.name}: {order_placed}- {instrument}")
+                    # Launch watcher only for accepted orders.
+                    if order_placed:
+                        launch_asset_watcher(instrument, strategy)
+                    else:
+                        logger.warning(f"Order for {instrument.symbol} was rejected. Asset watcher will not be started.")
                     
-                _instrument_candidates.append(instrument)
+                if order_placed:
+                    _instrument_candidates.append(instrument)
                 
                 # Stop if reached max candidates defined in strategy - MAX_TRADES_PER_DAY
                 if(len(_instrument_candidates) >= strategy.details.max_trades_per_day):

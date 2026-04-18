@@ -16,6 +16,8 @@ from ibapi.contract import Contract
 
 logger = logging.getLogger(__name__)
 
+REJECTED_ORDER_STATUS = "Rejected"
+
 class OrderService(IBApiConnector):
     def __init__(self, clientId : int=0): 
         super().__init__()
@@ -23,6 +25,7 @@ class OrderService(IBApiConnector):
         self.CLIENT_ID = clientId
         self.order_events = {}
         self.order_dto = MarketOrderDTO()
+        self.rejected_parent_orders = set()
         logger.info(f"[OrderService] - Order initialzed - Client ID: {clientId}")
         
     def store_order(self, order: Order, instrument: Instrument):
@@ -30,12 +33,7 @@ class OrderService(IBApiConnector):
         market_order.from_order(order, instrument.id, instrument.symbol, instrument.strategy_id, instrument.currency)
         
         logger.debug(f"[OrderService] - START - Stored order in DB: {market_order}" )
-        
-        t = threading.Thread(
-            target=self.order_dto.save_market_order, 
-            args=(market_order,)
-        )
-        t.start()
+        self.order_dto.save_market_order(market_order)
         
         logger.debug(f"[OrderService] - Stored order in DB: {market_order}" )
         
@@ -44,14 +42,40 @@ class OrderService(IBApiConnector):
         market_order.from_order(order, contract.conId, contract.symbol, strategy_id, contract.currency)
         
         logger.debug(f"[OrderService] - START - Stored SELL order in DB: {market_order}" )
-        
-        t = threading.Thread(
-            target=self.order_dto.save_market_order, 
-            args=(market_order,)
-        )
-        t.start()
+        self.order_dto.save_market_order(market_order)
         
         logger.debug(f"[OrderService] - Stored SELL order in DB: {market_order}" )
+
+    def _get_parent_order_id(self, order_id: int) -> int:
+        market_order = self.order_dto.get_market_order_by_id(order_id)
+        if market_order is None:
+            return order_id
+        return market_order.order_id if not market_order.order_parent_id else market_order.order_parent_id
+
+    def _set_related_orders_rejected(self, order_id: int) -> None:
+        parent_order_id = self._get_parent_order_id(order_id)
+        self.order_dto.update_related_market_order_status(parent_order_id, REJECTED_ORDER_STATUS)
+        self.rejected_parent_orders.add(parent_order_id)
+
+        for market_order in self.order_dto.get_market_orders_by_parent_order(parent_order_id):
+            event = self.order_events.get(market_order.order_id)
+            if event:
+                event.set()
+
+    def _is_order_rejected(self, parent_order_id: int) -> bool:
+        return parent_order_id in self.rejected_parent_orders
+
+    def error(self, *args):
+        req_id, _error_time, error_code, error_string, _advanced_order_rejection_json = self._parse_error_args(*args)
+        super().error(*args)
+
+        if self._is_order_reject_error(error_code, error_string) and isinstance(req_id, int) and req_id >= 0:
+            logger.warning(
+                "[OrderService] - Marking related orders as rejected for reqId=%s errorCode=%s.",
+                req_id,
+                error_code,
+            )
+            self._set_related_orders_rejected(req_id)
         
     def update_order(self, order: Order):
         logger.debug(f"[OrderService] - START - Update order in DB: {order.orderId}" )
@@ -226,6 +250,7 @@ class OrderService(IBApiConnector):
         
         # Wait for ALL 3 orders to be confirmed (10s timeout each)
         logger.info("Waiting for all 3 orders to be confirmed...")
+        was_rejected = False
         # for i, event in enumerate(events):
         for i, event in self.order_events.items():
             success = event.wait(timeout=10.0)
@@ -236,10 +261,15 @@ class OrderService(IBApiConnector):
                 # self.cancelOrder(stopLoss.orderId)
                 time.sleep(2)
                 # raise TimeoutError("Order confirmation timeout")
+
+            was_rejected = self._is_order_rejected(parentOrder.orderId)
                 
         # Cleanup
         for order_id in [parentOrder.orderId, stopLossOrder.orderId, targetOrder.orderId]:
             self.order_events.pop(order_id, None)
+
+        self.rejected_parent_orders.discard(parentOrder.orderId)
+        return not was_rejected
 
     def sell_open_position(self, contract: Contract, quantity: int, strategy_id: int):
         sellOrderId = self.nextId()

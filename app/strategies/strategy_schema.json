@@ -193,12 +193,18 @@
                                 "items": {
                                     "type": "object",
                                     "required": [
-                                        "sell_percentage",
+                                        "rule_id",
+                                        "target_percentage",
                                         "quantity_percentage",
                                         "stop_loss_adjustment_percentage"
                                     ],
                                     "properties": {
-                                        "sell_percentage": {
+                                        "rule_id": {
+                                            "type": "integer",
+                                            "description": "Unique identifier for the partial sell rule",
+                                            "minimum": 1
+                                        },
+                                        "target_percentage": {
                                             "type": "number",
                                             "description": "Percentage of target already reached (e.g., 30.0 for 30%)",
                                             "minimum": 0,
