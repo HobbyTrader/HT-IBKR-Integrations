@@ -285,8 +285,17 @@ python -m pip uninstall ht-ibkr-integrations
 
 **Issue: `ibapi` import fails**
 - Solution: Install the latest IBAPI from [Interactive Brokers](https://interactivebrokers.github.io/#)
+
+  Note: the `twsapi_macunix` archive contains the Python client source and the same source build works on Windows, macOS, and Linux.
+
+  **Windows:**
   ```bash
-  pip install ibapi>=10.37
+  py -m pip install "ibapi @ https://interactivebrokers.github.io/downloads/twsapi_macunix.1037.02.zip#subdirectory=IBJts/source/pythonclient"
+  ```
+
+  **macOS/Linux:**
+  ```bash
+  python -m pip install "ibapi @ https://interactivebrokers.github.io/downloads/twsapi_macunix.1037.02.zip#subdirectory=IBJts/source/pythonclient"
   ```
 
 **Issue: Permission denied during installation**
@@ -297,8 +306,17 @@ python -m pip uninstall ht-ibkr-integrations
 
 **Issue: `ModuleNotFoundError` after installation**
 - Solution: Ensure all dependencies are installed:
+
+  **Windows:**
   ```bash
-  pip install pandas protobuf schedule ibapi
+  py -m pip install pandas protobuf schedule
+  py -m pip install "ibapi @ https://interactivebrokers.github.io/downloads/twsapi_macunix.1037.02.zip#subdirectory=IBJts/source/pythonclient"
+  ```
+
+  **macOS/Linux:**
+  ```bash
+  python -m pip install pandas protobuf schedule
+  python -m pip install "ibapi @ https://interactivebrokers.github.io/downloads/twsapi_macunix.1037.02.zip#subdirectory=IBJts/source/pythonclient"
   ```
 
 ---
