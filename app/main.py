@@ -21,7 +21,7 @@ from app.services.market import MarketService
 from app.services.order import OrderService
 
 from app.utils.logger import LoggerManager
-from app.utils import load_config_scheduler
+from app.utils import load_config_scheduler, get_active_config_path
 
 LoggerManager()
 logger = logging.getLogger(__name__)
@@ -174,6 +174,7 @@ def main():
     strategy_dto = StrategyDTO()  
     market_order_dto = MarketOrderDTO()
     logger.info("[MAIN] - Starting HT-IBKR-Integrations Application")
+    logger.info("[MAIN] - Active config file: %s", get_active_config_path())
     arguments = get_arguments()  
     
     # Get strategies to process

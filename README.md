@@ -240,6 +240,52 @@ close-positions
 
 ### Post-Installation Setup
 
+#### Override config.json in a venv (recommended)
+
+When installed from a wheel, the packaged config is inside site-packages. To keep your own settings across upgrades, use an external config file and point the app to it.
+
+Default behavior:
+- On first run, the app creates a user config file automatically if none exists yet.
+- Windows default: %APPDATA%\\HT-IBKR-Integrations\\config.json
+- macOS/Linux default: ~/.config/ht-ibkr-integrations/config.json
+- The app then uses that file automatically.
+
+Config resolution order used by the application:
+1. Environment variable HT_IBKR_CONFIG_FILE
+2. config.json in current working directory
+3. Auto-created user config file
+4. Packaged default app/config.json
+
+This means scan will always use your modified file when HT_IBKR_CONFIG_FILE is set.
+
+Important note about installation:
+- Python package installation cannot persistently run export/set in your current shell session.
+- Use one of the commands below in the shell where you run scan, or rely on the auto-created user config path.
+
+Example command lines:
+
+Windows PowerShell:
+```powershell
+$env:HT_IBKR_CONFIG_FILE = "C:\\Trading\\ht-config.json"
+scan
+```
+
+Windows cmd.exe:
+```bat
+set HT_IBKR_CONFIG_FILE=C:\Trading\ht-config.json
+scan
+```
+
+macOS/Linux:
+```bash
+export HT_IBKR_CONFIG_FILE="$HOME/trading/ht-config.json"
+scan
+```
+
+Verification:
+- On startup, scan logs the active config path with message: [MAIN] - Active config file: ...
+- Check your log file to confirm the path is your external file before trusting results.
+
 #### Initialize Database
 
 After the first installation, initialize the database:
