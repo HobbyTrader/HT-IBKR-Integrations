@@ -1,5 +1,5 @@
 pandas
 protobuf==5.29.3
-ibapi>=9.81.1.post1,<10.0.0
+ibapi @ https://interactivebrokers.github.io/downloads/twsapi_macunix.1037.02.zip#subdirectory=IBJts/source/pythonclient
 setuptools>=80.9.0
 build>=1.4.0
