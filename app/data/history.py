@@ -1,15 +1,21 @@
+from __future__ import annotations
+
 import logging
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import TYPE_CHECKING, Any
 
+from app.data.numeric_mixin import NumericMixin
 from app.utils.date_helper import _parse_datetime
-from ibapi.common import BarData
+
+if TYPE_CHECKING:
+    from ibapi.common import BarData
 
 logger = logging.getLogger(__name__)
 
 @dataclass    
-class History:
+class History(NumericMixin):
     id: int = 0
     instrument_id: int = 0
     symbol: str = ""
@@ -55,7 +61,7 @@ class History:
             update_date=update_date)
     
     @classmethod
-    def from_bar(cls, instrument_id: int, symbol:str, bar: BarData):
+    def from_bar(cls, instrument_id: int, symbol:str, bar: Any):
         return cls(
             instrument_id=instrument_id,
             symbol=symbol,

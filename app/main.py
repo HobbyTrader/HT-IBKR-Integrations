@@ -3,6 +3,8 @@ import string
 import secrets
 import sys
 import threading
+import subprocess
+import base64
 
 from typing import List, Optional
 from dataclasses import dataclass
@@ -12,15 +14,22 @@ from app.data.instrument import Instrument
 
 from app.dto.strategy_dto import StrategyDTO
 from app.dto.scanner_dto import ScannerDTO
+from app.dto.market_order_dto import MarketOrderDTO
 
 from app.services.scanner import ScannerService
 from app.services.market import MarketService
 from app.services.order import OrderService
 
 from app.utils.logger import LoggerManager
+from app.utils import load_config_scheduler
 
 LoggerManager()
 logger = logging.getLogger(__name__)
+
+_stop_event = threading.Event()
+_instrument_candidate_ids = set()
+
+TERMINAL_RETRYABLE_BUY_STATUSES = {"REJECTED", "CANCELLED", "APICANCELLED", "INACTIVE"}
     
 @dataclass(frozen=True)
 class ScanArguments:
@@ -76,10 +85,94 @@ def update_scanner_result_candidate(exec_key: str, instrument: Instrument, scann
         args=(exec_key, instrument.id, instrument.is_candidate)
     )
     t.start()
-            
+
+def clean_non_candidates(exec_key: str, scanner_dto: Optional[ScannerDTO] = None) -> None:
+    if scanner_dto is None:
+        scanner_dto = ScannerDTO()
+        
+    scanner_dto.clean_non_candidates(exec_key)
+   
+def scheduler_stop():
+    logger.info("Scheduler stop requested.")
+    _stop_event.set()
+
+def update_order_status():
+    with OrderService() as order_serv:
+        order_serv.get_active_orders()
+        order_serv.get_completed_orders()
+
+
+def has_buy_order_today(instrument: Instrument, market_order_dto: Optional[MarketOrderDTO] = None) -> bool:
+    if market_order_dto is None:
+        market_order_dto = MarketOrderDTO()
+
+    todays_orders = market_order_dto.get_market_orders_by_contract_id_today(instrument.id)
+    for order in todays_orders:
+        if (order.order_action or "").upper() != "BUY":
+            continue
+
+        order_status = (order.order_status or "").upper()
+        if order_status in TERMINAL_RETRYABLE_BUY_STATUSES:
+            continue
+
+        logger.info(
+            "Instrument %s already has a BUY order today (order_id=%s, status=%s). Skipping.",
+            instrument.symbol,
+            order.order_id,
+            order.order_status,
+        )
+        return True
+
+    return False
+
+
+def count_buy_orders_today_for_strategy(strategy: Strategy, market_order_dto: Optional[MarketOrderDTO] = None) -> int:
+    if market_order_dto is None:
+        market_order_dto = MarketOrderDTO()
+
+    todays_orders = market_order_dto.get_market_orders_by_strategy_today(strategy.id)
+    return sum(
+        1
+        for order in todays_orders
+        if (order.order_action or "").upper() == "BUY"
+        and (order.order_status or "").upper() not in TERMINAL_RETRYABLE_BUY_STATUSES
+    )
+
+def build_instrument_payload_b64(instrument: Instrument) -> str:
+    payload_json = instrument.to_json()
+    return base64.urlsafe_b64encode(payload_json.encode("utf-8")).decode("ascii")
+
+def build_strategy_payload_b64(strategy: Strategy) -> str:
+    payload_json = strategy.to_json()
+    return base64.urlsafe_b64encode(payload_json.encode("utf-8")).decode("ascii")
+
+def launch_asset_watcher(instrument: Instrument, strategy: Strategy) -> None:
+    logger.info(f"Launching asset watcher for")
+    logger.debug(f"Launching asset watcher for {instrument.symbol} and strategy {strategy.name} - {instrument}")
+    cmd = [
+        sys.executable,
+        "-m",
+        "app.asset_watcher",
+        "--instrument-b64",
+        build_instrument_payload_b64(instrument),
+        "--strategy-b64",
+        build_strategy_payload_b64(strategy),
+    ]
+    subprocess.Popen(
+        cmd,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+        close_fds=True,
+    )
+                          
 def main():  
+    global _instrument_candidate_ids
+    
     scanner_dto = ScannerDTO()
     strategy_dto = StrategyDTO()  
+    market_order_dto = MarketOrderDTO()
     logger.info("[MAIN] - Starting HT-IBKR-Integrations Application")
     arguments = get_arguments()  
     
@@ -87,9 +180,23 @@ def main():
     strategies = get_strategies(arguments.tags, arguments.all_must_match, strategy_dto)
     
     for strategy in strategies:
-        instrument_candidates = []
         exec_key = generate_key()
         logger.info(f"STRATEGY - {strategy.id} {strategy.name} - EXEC KEY - {exec_key}")
+        placed_orders_today = count_buy_orders_today_for_strategy(strategy, market_order_dto)
+        logger.info(
+            "Strategy %s has %s BUY orders today (limit=%s).",
+            strategy.name,
+            placed_orders_today,
+            strategy.details.max_trades_per_day,
+        )
+
+        if placed_orders_today >= strategy.details.max_trades_per_day:
+            logger.info(
+                "Strategy %s already reached max_trades_per_day (%s). Skipping strategy run.",
+                strategy.name,
+                strategy.details.max_trades_per_day,
+            )
+            continue
         
         # TODO: Add check on opening hours of the strategy to skip if outside allowed time
         # TODO: Add check on max trades per day already placed and keep track of trades placed today
@@ -103,7 +210,23 @@ def main():
             
         for instrument in scanner_results:
             logger.info(f"SCANNER RESULT - {instrument}")
-                      
+
+            if placed_orders_today >= strategy.details.max_trades_per_day:
+                logger.info(
+                    "Reached max_trades_per_day for strategy %s (%s). Stopping scanner processing for this strategy.",
+                    strategy.name,
+                    strategy.details.max_trades_per_day,
+                )
+                break
+
+            # Check if instrument already has a BUY order in market_orders today.
+            if has_buy_order_today(instrument, market_order_dto):
+                continue
+            
+            # Check if instrument already candidate previously in the day to avoid placing multiple orders for the same instrument
+            if instrument.id in _instrument_candidate_ids:
+                logger.info(f"Instrument {instrument.symbol} already processed as candidate for strategy {strategy.name}. Skipping.")
+                continue
             # Get market data for all scanner results (History, etc) and set candidate status
             get_instrument_market_data(instrument)
                 
@@ -114,16 +237,53 @@ def main():
                 
             if(instrument.is_candidate):                
                 # Place orders for the candidates (specify any clientId if needed to separate order streams)
-                with OrderService(1) as order_serv:
-                    order_serv.place_bracket_order(instrument)
+                with OrderService() as order_serv:
+                    logger.info(f"Placing order for {instrument.symbol} for strategy {strategy.name}")
+                    order_placed = order_serv.place_bracket_order(instrument)
+                    logger.info(f"Order placed for {instrument.symbol} for strategy {strategy.name}: {order_placed}- {instrument}")
+                    # Launch watcher only for accepted orders.
+                    if order_placed:
+                        launch_asset_watcher(instrument, strategy)
+                    else:
+                        logger.warning(f"Order for {instrument.symbol} was rejected. Asset watcher will not be started.")
                     
-                instrument_candidates.append(instrument)
+                if order_placed:
+                    _instrument_candidate_ids.add(instrument.id)
+                    placed_orders_today += 1
                 
                 # Stop if reached max candidates defined in strategy - MAX_TRADES_PER_DAY
-                if(len(instrument_candidates) >= strategy.details.max_trades_per_day):
+                if placed_orders_today >= strategy.details.max_trades_per_day:
+                    logger.info(
+                        "Reached max_trades_per_day for strategy %s (%s). Stopping processing more scanner results.",
+                        strategy.name,
+                        strategy.details.max_trades_per_day,
+                    )
                     break
+        
+        clean_non_candidates(exec_key, scanner_dto)
+        update_order_status()
+        
+
+def run_scheduler():
+    config_scheduler_scanner = load_config_scheduler().get("scanner", {})
+    logger.info(f"Loaded scheduler configuration for scanner: {config_scheduler_scanner}")
+    
+    if not config_scheduler_scanner.get("enabled", False):
+        logger.info("Scanner scheduler is disabled in configuration. Only 1 execution will be performed.")
+        main()
+        scheduler_stop()
+        return
+    
+    interval = config_scheduler_scanner.get("interval", 60)
+    logger.info(f"Starting scheduler with interval {interval} seconds.")
+    
+    while not _stop_event.is_set():
+        main()
+        logger.info(f"Scheduler sleeping for {interval} seconds...")
+        _stop_event.wait(interval)
+        
                 
     logger.info("HT-IBKR-Integrations Application Finished")
-    
+            
 if __name__ == "__main__":
-    main()
+    run_scheduler()

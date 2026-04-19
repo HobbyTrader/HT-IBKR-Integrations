@@ -67,6 +67,23 @@ CREATE TABLE IF NOT EXISTS executions (
     FOREIGN KEY (order_id) REFERENCES market_orders(order_id)
 );
 
+-- Table des barres temps réel (callback realtimeBar)
+-- Stocke les données de marché en temps réel reçues via le callback realtimeBar de l'API IBKR
+CREATE TABLE IF NOT EXISTS realtime_bars (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    req_id INTEGER NOT NULL,
+    bar_time INTEGER NOT NULL,          -- Unix timestamp retourné par IBKR
+    open_price REAL NOT NULL,
+    high_price REAL NOT NULL,
+    low_price REAL NOT NULL,
+    close_price REAL NOT NULL,
+    volume INTEGER NOT NULL,
+    wap REAL DEFAULT 0,
+    bar_count INTEGER DEFAULT 0,
+    create_date TEXT NOT NULL DEFAULT (datetime('now')),
+    update_date TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 -- Table des données historiques des instruments
 -- Permet de stocker les données historiques pour analyse et backtesting
 CREATE TABLE IF NOT EXISTS history (

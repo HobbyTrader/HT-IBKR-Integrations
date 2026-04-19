@@ -27,15 +27,16 @@ def get_arguments() -> ClosePosiotionsArguments:
     
     return ClosePosiotionsArguments(strategy_id=strategy_id)
 
-def main():
+def close_position_from_strategy(strategy_id: int):
     strategy_dto = StrategyDTO()
     market_order_dto = MarketOrderDTO()
     open_positions = []
     
-    args = get_arguments()
-    strategy = strategy_dto.get_strategy_by_id(args.strategy_id)
+    # args = get_arguments()
+    # strategy = strategy_dto.get_strategy_by_id(args.strategy_id)
+    strategy = strategy_dto.get_strategy_by_id(strategy_id)
     if not strategy:
-        logger.error(f"Strategy with ID {args.strategy_id} not found. Exiting.")
+        logger.error(f"Strategy with ID {strategy_id} not found. Exiting.")
         return
     
     if not strategy.is_market_open_now():
@@ -70,4 +71,5 @@ def main():
     
         
 if __name__ == "__main__":
-    main()
+    args = get_arguments()
+    close_position_from_strategy(args.strategy_id)

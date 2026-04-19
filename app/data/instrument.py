@@ -1,25 +1,28 @@
+from __future__ import annotations
+
 import json
 import logging
 
 from dataclasses import dataclass, field
-from typing import List
+from typing import TYPE_CHECKING, Any, List
 
-from app.dto.history_dto import HistoryDTO
-from ibapi.common import BarData
-from ibapi.contract import Contract
-from app.data.history import History
+from app.data.numeric_mixin import NumericMixin
+
+if TYPE_CHECKING:
+    from ibapi.common import BarData
+    from ibapi.contract import Contract
 
 logger = logging.getLogger(__name__)
 
 @dataclass    
-class Instrument:
+class Instrument(NumericMixin):
     id: int
     symbol: str
     sectype: str
     currency: str
     exchange: str
     strategy_id: int = 0
-    daily_history: List[BarData] = field(default_factory=list)
+    daily_history: List[Any] = field(default_factory=list)
     market_price: float = 0.0
     avg_volume: float = 0.0
     stop_loss_price: float = 0.0
@@ -33,11 +36,30 @@ class Instrument:
         if len(row) < 5:
             raise ValueError("Invalid row")
         return cls(*row[:5])
+
+    def to_payload(self) -> dict:
+        return {
+            "id": self._normalize_numeric(self.id),
+            "symbol": self.symbol,
+            "sectype": self.sectype,
+            "currency": self.currency,
+            "exchange": self.exchange,
+            "strategy_id": self._normalize_numeric(self.strategy_id),
+            "daily_history": [],
+            "market_price": self._normalize_numeric(self.market_price),
+            "avg_volume": self._normalize_numeric(self.avg_volume),
+            "stop_loss_price": self._normalize_numeric(self.stop_loss_price),
+            "take_profit_price": self._normalize_numeric(self.take_profit_price),
+            "volume_buy": self._normalize_numeric(self.volume_buy),
+            "is_candidate": self.is_candidate,
+        }
   
     def to_json(self) -> str:
-        return json.dumps(self.__dict__)
+        return json.dumps(self.to_payload(), separators=(",", ":"))
     
     def to_contract(self) -> Contract:
+        from ibapi.contract import Contract
+
         contract = Contract()
         contract.conId = self.id
         contract.symbol = self.symbol
@@ -85,6 +107,9 @@ class Instrument:
         logger.debug(f"[Instrument] - Set volume to buy for {self.symbol}: {self.volume_buy}")
         
     def store_history(self):
+        from app.data.history import History
+        from app.dto.history_dto import HistoryDTO
+
         # Placeholder for storing instrument history
         logger.debug(f"[Instrument] - Storing instrument history for {self.symbol}.")
         for bar in self.daily_history:

@@ -16,12 +16,16 @@ from ibapi.contract import Contract
 
 logger = logging.getLogger(__name__)
 
+REJECTED_ORDER_STATUS = "Rejected"
+
 class OrderService(IBApiConnector):
     def __init__(self, clientId : int=0): 
         super().__init__()
         self.order_events = {}
         self.CLIENT_ID = clientId
+        self.order_events = {}
         self.order_dto = MarketOrderDTO()
+        self.rejected_parent_orders = set()
         logger.info(f"[OrderService] - Order initialzed - Client ID: {clientId}")
         
     def store_order(self, order: Order, instrument: Instrument):
@@ -29,12 +33,7 @@ class OrderService(IBApiConnector):
         market_order.from_order(order, instrument.id, instrument.symbol, instrument.strategy_id, instrument.currency)
         
         logger.debug(f"[OrderService] - START - Stored order in DB: {market_order}" )
-        
-        t = threading.Thread(
-            target=self.order_dto.save_market_order, 
-            args=(market_order,)
-        )
-        t.start()
+        self.order_dto.save_market_order(market_order)
         
         logger.debug(f"[OrderService] - Stored order in DB: {market_order}" )
         
@@ -43,14 +42,40 @@ class OrderService(IBApiConnector):
         market_order.from_order(order, contract.conId, contract.symbol, strategy_id, contract.currency)
         
         logger.debug(f"[OrderService] - START - Stored SELL order in DB: {market_order}" )
-        
-        t = threading.Thread(
-            target=self.order_dto.save_market_order, 
-            args=(market_order,)
-        )
-        t.start()
+        self.order_dto.save_market_order(market_order)
         
         logger.debug(f"[OrderService] - Stored SELL order in DB: {market_order}" )
+
+    def _get_parent_order_id(self, order_id: int) -> int:
+        market_order = self.order_dto.get_market_order_by_id(order_id)
+        if market_order is None:
+            return order_id
+        return market_order.order_id if not market_order.order_parent_id else market_order.order_parent_id
+
+    def _set_related_orders_rejected(self, order_id: int) -> None:
+        parent_order_id = self._get_parent_order_id(order_id)
+        self.order_dto.update_related_market_order_status(parent_order_id, REJECTED_ORDER_STATUS)
+        self.rejected_parent_orders.add(parent_order_id)
+
+        for market_order in self.order_dto.get_market_orders_by_parent_order(parent_order_id):
+            event = self.order_events.get(market_order.order_id)
+            if event:
+                event.set()
+
+    def _is_order_rejected(self, parent_order_id: int) -> bool:
+        return parent_order_id in self.rejected_parent_orders
+
+    def error(self, *args):
+        req_id, _error_time, error_code, error_string, _advanced_order_rejection_json = self._parse_error_args(*args)
+        super().error(*args)
+
+        if self._is_order_reject_error(error_code, error_string) and isinstance(req_id, int) and req_id >= 0:
+            logger.warning(
+                "[OrderService] - Marking related orders as rejected for reqId=%s errorCode=%s.",
+                req_id,
+                error_code,
+            )
+            self._set_related_orders_rejected(req_id)
         
     def update_order(self, order: Order):
         logger.debug(f"[OrderService] - START - Update order in DB: {order.orderId}" )
@@ -85,6 +110,14 @@ class OrderService(IBApiConnector):
         return super().openOrder(orderId, contract, order, orderState)
     
     @iswrapper
+    def openOrderEnd(self):
+        event = self.order_events.get("Open")
+        if event:
+            event.set()
+        logger.info(f"[OrderService] - Open Order End.")
+        return super().openOrderEnd()
+    
+    @iswrapper
     def orderStatus(self, orderId, status, filled, remaining, avgFillPrice, permId,
                     parentId, lastFillPrice, clientId, whyHeld, mktCapPrice):
         logger.info(f"[OrderService] - Order Status. orderId: {orderId}, status: {status}, filled: {filled}, remaining: {remaining}, avgFillPrice: {avgFillPrice}, permId: {permId}, parentId: {parentId}, lastFillPrice: {lastFillPrice}, clientId: {clientId}, whyHeld: {whyHeld}, mktCapPrice: {mktCapPrice}.")
@@ -115,6 +148,9 @@ class OrderService(IBApiConnector):
     
     @iswrapper
     def completedOrdersEnd(self):
+        event = self.order_events.get("Complete")
+        if event:
+            event.set()
         logger.info(f"[OrderService] - Completed Orders End.")
         return super().completedOrdersEnd()
     
@@ -194,29 +230,14 @@ class OrderService(IBApiConnector):
         self.placeOrder(parentOrder.orderId, contract, parentOrder)
 
         #This will be our “take profit” order, a LMT order to sell at a higher price
-        targetOrder1 = self.create_target_order_LMT(instrument, int(quantity/3), parentOrderId)
-        targetOrder1.lmtPrice = targetOrder1.lmtPrice - 0.05  # Adjust take profit price for first target
-        targetOrder2 = self.create_target_order_LMT(instrument, int(quantity/3), parentOrderId)
-        targetOrder2.lmtPrice = targetOrder2.lmtPrice - 0.02 # Standard take profit price for second target
-        targetOrder3 = self.create_target_order_LMT(instrument, quantity - 2*(int(quantity/3)), parentOrderId)
+        targetOrder = self.create_target_order_LMT(instrument, quantity, parentOrderId)
         
-        target_events1 = threading.Event()
-        self.order_events[targetOrder1.orderId] = target_events1
-        events.append(target_events1)        
-        self.store_order(targetOrder1, instrument)        
-        self.placeOrder(targetOrder1.orderId, contract, targetOrder1)
+        target_events = threading.Event()
+        self.order_events[targetOrder.orderId] = target_events
+        events.append(target_events)        
+        self.store_order(targetOrder, instrument)        
+        self.placeOrder(targetOrder.orderId, contract, targetOrder)
         
-        # target_events2 = threading.Event()
-        # self.order_events[targetOrder2.orderId] = target_events2
-        # events.append(target_events2)        
-        # self.store_order(targetOrder2, instrument)        
-        # self.placeOrder(targetOrder2.orderId, contract, targetOrder2)       
-        
-        # target_events3 = threading.Event()
-        # self.order_events[targetOrder3.orderId] = target_events3
-        # events.append(target_events3)        
-        # self.store_order(targetOrder3, instrument)        
-        # self.placeOrder(targetOrder3.orderId, contract, targetOrder3)
         
         #This will be our “stop loss” order, a STP order to sell at a lower price
         stopLossOrder = self.create_stop_order_STP(instrument, quantity, parentOrderId)
@@ -229,6 +250,7 @@ class OrderService(IBApiConnector):
         
         # Wait for ALL 3 orders to be confirmed (10s timeout each)
         logger.info("Waiting for all 3 orders to be confirmed...")
+        was_rejected = False
         # for i, event in enumerate(events):
         for i, event in self.order_events.items():
             success = event.wait(timeout=10.0)
@@ -239,10 +261,15 @@ class OrderService(IBApiConnector):
                 # self.cancelOrder(stopLoss.orderId)
                 time.sleep(2)
                 # raise TimeoutError("Order confirmation timeout")
+
+            was_rejected = self._is_order_rejected(parentOrder.orderId)
                 
         # Cleanup
-        for order_id in [parentOrder.orderId, stopLossOrder.orderId, targetOrder1.orderId]:
+        for order_id in [parentOrder.orderId, stopLossOrder.orderId, targetOrder.orderId]:
             self.order_events.pop(order_id, None)
+
+        self.rejected_parent_orders.discard(parentOrder.orderId)
+        return not was_rejected
 
     def sell_open_position(self, contract: Contract, quantity: int, strategy_id: int):
         sellOrderId = self.nextId()
@@ -269,15 +296,25 @@ class OrderService(IBApiConnector):
         self.order_events.pop(sellOrder.orderId, None)
 
     def get_active_orders(self):
+        evt = threading.Event()
+        self.order_events["Open"] = evt
         # Placeholder for fetching active orders from IBKR
         logger.info("[OrderService] - Fetching active orders...")
         self.reqAllOpenOrders() 
         
-    def get_comlpeted_orders(self):
+        evt.wait(timeout=30)
+        self.order_events.pop("Open", None)
+        
+    def get_completed_orders(self):
+        evt = threading.Event()
+        self.order_events["Complete"] = evt
         # Placeholder for fetching completed orders from IBKR
         logger.info("[OrderService] - Fetching completed orders...")
-        self.reqCompletedOrders()
+        self.reqCompletedOrders(False)  
         
+        evt.wait(timeout=30)
+        self.order_events.pop("Complete", None)
+            
     def cancel_all_orders(self):
         # Placeholder for cancelling all orders in IBKR
         logger.info("[OrderService] - Cancelling all orders...")

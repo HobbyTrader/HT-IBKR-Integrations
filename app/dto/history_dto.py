@@ -75,8 +75,8 @@ class HistoryDTO:
                 history.high_price,
                 history.low_price,
                 history.close_price,
-                history.volume,
-                history.wap,
+                int(history.volume),
+                float(history.wap),
                 history.bar_count
             )
         )

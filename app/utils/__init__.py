@@ -59,3 +59,29 @@ def load_config_ibapi() -> json:
         }
         return config_json
     
+def load_config_scheduler() -> json:
+    try:
+        with open(_config_path) as file:
+            return json.load(file).get("scheduler", {
+            "scanner": {
+                "enabled": True,
+                "interval": 60
+            },
+            "watcher": {
+                "enabled": True,
+                "interval": 60
+            }
+        })
+    except Exception as e:
+        # Fallback config.json if non existing filr in project root
+        config_json = {
+            "scanner": {
+                "enabled": True,
+                "interval": 60
+            },
+            "watcher": {
+                "enabled": True,
+                "interval": 60
+            }
+        }
+        return config_json
