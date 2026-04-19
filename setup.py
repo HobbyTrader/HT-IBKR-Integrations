@@ -1,17 +1,6 @@
-# from setuptools import setup
-# from setuptools.command.develop import develop
-# from setuptools.command.install import install
-# import subprocess
-# import sys
+"""Minimal setup.py for compatibility with setuptools.
+All configuration is managed through pyproject.toml.
+"""
+from setuptools import setup
 
-# class PostInstallCommand(install):
-#     def run(self):
-#         install.run(self)
-#         print("Initializing database...")
-#         subprocess.check_call([sys.executable, "-m", "app.utils.db_init"])
-
-# setup(
-#     cmdclass={
-#         'install': PostInstallCommand,
-#     }
-# )
+setup()
