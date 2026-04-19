@@ -1,0 +1,29 @@
+{
+  "database": {
+    "filename": "database/htibkr.db",
+    "tabledefinitions": "table_definitions.sql"
+  },
+  "IBKR": {
+    "HOST": "localhost",
+    "PORT": 7497,
+    "CLIENTID": "0",
+    "ACCOUNTIT": "DUMXXXXXX"
+  },
+  "logging": {
+    "logpath": "LOG",
+    "logname": "HT_TOOLS.log",
+    "loglevel": "DEBUG",
+    "consolelevel": "INFO",
+    "backupcount": 5
+  },
+  "scheduler": {
+    "scanner": {
+      "enabled": true,
+      "interval": 300
+    },
+    "watcher": {
+      "enabled": true,
+      "interval": 60
+    }
+  }
+}

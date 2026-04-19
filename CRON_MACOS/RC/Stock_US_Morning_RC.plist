@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key><string>HTrader.Stock_US.morning.RC</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/Users/greg/Applications/HTTrader/Release/.venv/bin/scan</string>
+      <string>US,STOCK</string>
+      <string>True</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/greg/Applications/HTTrader/Release</string>
+    <key>StartCalendarInterval</key>
+    <array>
+      <!-- Weekday: 2=Mon ... 6=Fri -->
+      <dict>
+        <key>Weekday</key>
+        <array>
+          <integer>2</integer>
+          <integer>3</integer>
+          <integer>4</integer>
+          <integer>5</integer>
+          <integer>6</integer>
+        </array>
+        <key>Hour</key><integer>15</integer>
+        <key>Minute</key><integer>40</integer>
+      </dict>
+    </array>
+    
+    <!-- Ensure timezone -->
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>TZ</key><string>Europe/Brussels</string>
+      <key>PYTHONPATH</key><string>/Users/greg/Applications/HTTrader/Release</string>
+    </dict>
+
+    <key>RunAtLoad</key><false/>
+    <key>StandardOutPath</key><string>/Users/greg/Applications/HTTrader/Release/HTrader.Stock_US_morning.out</string>
+    <key>StandardErrorPath</key><string>/Users/greg/Applications/HTTrader/Release/HTrader.Stock_US_morning.err</string>
+  </dict>
+</plist>

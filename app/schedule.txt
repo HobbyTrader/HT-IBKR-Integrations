@@ -1,0 +1,12 @@
+OK - Configuration de schedule dans le fichier de Configuration
+- nombre de titres différents achetés sur la journée - montant maximal
+- heure de départ et de fin
+OK - le script de schedule démarre les scripts du main
+
+
+
+- autre schedule pour le test sur les valeurs actuelles afin de monter le stop loss si nécessaire
+- définir dans la configuration les niveaux à adapter si le titre monter (stratégie)
+
+
+- documenter la configuration des stratégies

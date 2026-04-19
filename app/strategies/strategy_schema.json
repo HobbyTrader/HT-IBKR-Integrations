@@ -1,0 +1,234 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Trading Strategy Configuration",
+    "description": "Schema for trading strategy configuration files",
+    "type": "object",
+    "required": [
+        "strategies"
+    ],
+    "properties": {
+        "strategies": {
+            "type": "array",
+            "description": "Array of strategy configurations",
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "details"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the strategy"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "description": "Tags associated with the strategy",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "details": {
+                        "type": "object",
+                        "description": "Detailed configuration for the strategy",
+                        "required": [
+                            "instrument",
+                            "locationCode",
+                            "scanCode",
+                            "scan_options",
+                            "filter_options",
+                            "maxResults",
+                            "minutes_to_order",
+                            "max_shares_to_invest_per_trade",
+                            "min_shares_to_invest_per_trade",
+                            "max_price_per_trade",
+                            "min_price_per_trade",
+                            "max_trades_per_day",
+                            "opening_hours",
+                            "open_days",
+                            "min_open_trade_gap_percentage",
+                            "max_open_trade_gap_percentage",
+                            "stop_loss_percent",
+                            "take_profit_percent",
+                            "max_volume_percentage"
+                        ],
+                        "properties": {
+                            "instrument": {
+                                "type": "string",
+                                "description": "Instrument type (e.g., STK, STOCK.EU)"
+                            },
+                            "locationCode": {
+                                "type": "string",
+                                "description": "Location/exchange code for the scan"
+                            },
+                            "scanCode": {
+                                "type": "string",
+                                "description": "Scanner code to use (e.g., HIGH_OPEN_GAP)"
+                            },
+                            "scan_options": {
+                                "type": "array",
+                                "description": "Additional scan options",
+                                "items": {
+                                    "type": "object"
+                                }
+                            },
+                            "filter_options": {
+                                "type": "array",
+                                "description": "Filtering criteria for the scan",
+                                "items": {
+                                    "type": "object",
+                                    "required": [
+                                        "name",
+                                        "value"
+                                    ],
+                                    "properties": {
+                                        "name": {
+                                            "type": "string",
+                                            "description": "Filter parameter name"
+                                        },
+                                        "value": {
+                                            "type": "string",
+                                            "description": "Filter parameter value"
+                                        }
+                                    }
+                                }
+                            },
+                            "maxResults": {
+                                "type": "integer",
+                                "description": "Maximum number of scanner results to fetch",
+                                "minimum": 1
+                            },
+                            "minutes_to_order": {
+                                "type": "integer",
+                                "description": "Minutes to wait before placing order after market open",
+                                "minimum": 0
+                            },
+                            "max_shares_to_invest_per_trade": {
+                                "type": "integer",
+                                "description": "Maximum number of shares per trade",
+                                "minimum": 0
+                            },
+                            "min_shares_to_invest_per_trade": {
+                                "type": "integer",
+                                "description": "Minimum number of shares per trade",
+                                "minimum": 0
+                            },
+                            "max_price_per_trade": {
+                                "type": "number",
+                                "description": "Maximum total price for a trade",
+                                "minimum": 0
+                            },
+                            "min_price_per_trade": {
+                                "type": "number",
+                                "description": "Minimum total price for a trade",
+                                "minimum": 0
+                            },
+                            "max_trades_per_day": {
+                                "type": "integer",
+                                "description": "Maximum number of trades per day",
+                                "minimum": 0
+                            },
+                            "opening_hours": {
+                                "type": "array",
+                                "description": "Market opening hours (HH:MM-HH:MM format)",
+                                "items": {
+                                    "type": "string",
+                                    "pattern": "^\\d{2}:\\d{2}$",
+                                    "maxItems": 2
+                                }
+                            },
+                            "open_days": {
+                                "type": "array",
+                                "description": "Days of the week the market is open. Defaults to weekdays.[\"MON\", \"TUE\", \"WED\", \"THU\", \"FRI\"]",
+                                "items": {
+                                    "type": "string",
+                                    "enum": [
+                                        "MON",
+                                        "TUE",
+                                        "WED",
+                                        "THU",
+                                        "FRI",
+                                        "SAT",
+                                        "SUN"
+                                    ]
+                                }
+                            },
+                            "min_open_trade_gap_percentage": {
+                                "type": "number",
+                                "description": "Minimum opening gap percentage",
+                                "minimum": 0
+                            },
+                            "max_open_trade_gap_percentage": {
+                                "type": "number",
+                                "description": "Maximum opening gap percentage",
+                                "minimum": 0
+                            },
+                            "stop_loss_percent": {
+                                "type": "number",
+                                "description": "Stop loss percentage (e.g., 95.0 for 5% loss)",
+                                "minimum": 0,
+                                "maximum": 100
+                            },
+                            "take_profit_percent": {
+                                "type": "number",
+                                "description": "Take profit percentage (e.g., 110.00 for 10% gain)",
+                                "minimum": 100,
+                                "maximum": 300
+                            },
+                            "max_volume_percent": {
+                                "type": "number",
+                                "description": "Maximum volume percentage compared to avg exchanged volume at that time(e.g., 1.0 for 1%)",
+                                "minimum": 0,
+                                "maximum": 100
+                            },
+                            "increase_position_candidate_percentage": {
+                                "type": "number",
+                                "description": "Percentage threshold to consider increasing position in a candidate (e.g., 0.8 for 0.8%)",
+                                "minimum": 0,
+                                "maximum": 100
+                            },
+                            "partial_sell_rules": {
+                                "type": "array",
+                                "description": "Rules for partial selling of positions. Used by the watcher to check if it needs to partially sell positions when target is reached and adjust stop loss accordingly.",
+                                "items": {
+                                    "type": "object",
+                                    "required": [
+                                        "rule_id",
+                                        "target_percentage",
+                                        "quantity_percentage",
+                                        "stop_loss_adjustment_percentage"
+                                    ],
+                                    "properties": {
+                                        "rule_id": {
+                                            "type": "integer",
+                                            "description": "Unique identifier for the partial sell rule",
+                                            "minimum": 1
+                                        },
+                                        "target_percentage": {
+                                            "type": "number",
+                                            "description": "Percentage of target already reached (e.g., 30.0 for 30%)",
+                                            "minimum": 0,
+                                            "maximum": 100
+                                        },
+                                        "quantity_percentage": {
+                                            "type": "number",
+                                            "description": "Percentage of quantity to sell at specified target (e.g., 30.0 for 30%)",
+                                            "minimum": 0,
+                                            "maximum": 100
+                                        },
+                                        "stop_loss_adjustment_percentage": {
+                                            "type": "number",
+                                            "description": "Percentage to adjust stop loss after partial sell (e.g., 5.0 for 5% increase)",
+                                            "minimum": 0,
+                                            "maximum": 100
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

@@ -1,5 +1,10 @@
-# project ignores
-env/ 
+# log ignores
+log/
+*.sqbpro
+.claude/ 
+
+# database
+*.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -24,7 +29,8 @@ sdist/
 var/
 wheels/
 share/python-wheels/
-*.egg-info/
+# *.egg-info/
+ht_ibkr_integrations.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
