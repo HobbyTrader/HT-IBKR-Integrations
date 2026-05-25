@@ -36,6 +36,16 @@ def _parse_datetime(date_string: str | None) -> datetime:
             return datetime.strptime(date_string, fmt)
         except (ValueError, TypeError):
             continue
+
+    # IBKR commonly appends an exchange timezone like 'US/Eastern'. Python's
+    # strptime cannot reliably parse that zone name across platforms, so parse
+    # the datetime part and ignore the trailing timezone token.
+    if isinstance(date_string, str) and date_string.count(" ") >= 2:
+        try:
+            date_part = " ".join(date_string.split(" ")[:2])
+            return datetime.strptime(date_part, "%Y%m%d %H:%M:%S")
+        except (ValueError, TypeError):
+            pass
     
     # If no format matches, log warning and return current time
     logger.warning(f"Unable to parse datetime string: '{date_string}', using current time")

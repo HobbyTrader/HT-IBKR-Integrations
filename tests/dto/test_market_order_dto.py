@@ -8,6 +8,28 @@ from app.data.market_order import MarketOrder
 from app.utils.date_helper import _parse_datetime
 
 
+class TestDateHelperParseDatetime(unittest.TestCase):
+    def test_parse_datetime_supported_formats(self):
+        cases = [
+            ("2025-01-04", datetime(2025, 1, 4, 0, 0, 0)),
+            ("2025-01-04 15:30:45", datetime(2025, 1, 4, 15, 30, 45)),
+            ("2025-01-04 15:30:45.123456", datetime(2025, 1, 4, 15, 30, 45, 123456)),
+            ("20250104", datetime(2025, 1, 4, 0, 0, 0)),
+            ("20250104 15:30:45", datetime(2025, 1, 4, 15, 30, 45)),
+            ("20250104-15:30:45", datetime(2025, 1, 4, 15, 30, 45)),
+            ("20260521 09:56:30 US/Eastern", datetime(2026, 5, 21, 9, 56, 30)),
+        ]
+
+        for raw_value, expected in cases:
+            with self.subTest(raw_value=raw_value):
+                parsed = _parse_datetime(raw_value)
+                self.assertEqual(parsed, expected)
+
+    def test_parse_datetime_returns_datetime_instance_for_none(self):
+        parsed = _parse_datetime(None)
+        self.assertIsInstance(parsed, datetime)
+
+
 class TestMarketOrderDTO(unittest.TestCase):
     def setUp(self):
         # Patch SQLiteManager inside the module
@@ -166,7 +188,7 @@ class TestMarketOrderDTO(unittest.TestCase):
     def test_update_market_order_status(self):
         self.dto.update_market_order_status(9, "FILLED")
         self.mock_cursor.execute.assert_called_once_with(
-            "UPDATE market_orders SET order_status = ?, update_date = CURRENT_TIMESTAMP WHERE order_id = ?",
+            "UPDATE market_orders SET order_status = ?, update_date = CURRENT_TIMESTAMP WHERE order_id = ? AND LOWER(order_status) != 'rejected'",
             ("FILLED", 9),
         )
         self.mock_conn.commit.assert_called_once()
