@@ -115,9 +115,9 @@ class MarketOrderDTO:
         rows = cursor.fetchall()
         return [self.row_to_market_order(row) for row in rows]
     
-    def get_market_orders_by_contract_id_today(self, contract_id) -> List[MarketOrder]:
+    def get_market_orders_by_contract_id_today_parent(self, contract_id) -> List[MarketOrder]:
         cursor = self.dbconn.conn.cursor()
-        cursor.execute("SELECT * FROM market_orders WHERE order_contract_id = ? AND DATE(create_date) = DATE('now')", (contract_id,))
+        cursor.execute("SELECT * FROM market_orders WHERE order_contract_id = ? AND order_parent_id = 0 AND DATE(create_date) = DATE('now')", (contract_id,))
         rows = cursor.fetchall()
         return [self.row_to_market_order(row) for row in rows]
 

@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import logging
 
 from dataclasses import dataclass, field
@@ -31,8 +31,9 @@ class ExecutionOrder(NumericMixin):
     def from_execution(self, execution: Execution):
         self.exec_id = execution.execId
         self.order_id = execution.orderId
-        self.shares = execution.shares
-        self.price = execution.price
+        # IB execDetails returns cumulative quantity and average price for the order.
+        self.shares = getattr(execution, "cumQty", execution.shares)
+        self.price = getattr(execution, "avgPrice", execution.price)
         self.execution_time = execution.time
     
     

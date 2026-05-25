@@ -33,6 +33,8 @@ scan = "app.main:main"
 loadstrategy = "app.loadstrategy:main"
 init-db = "app.utils.db_init:initialize_database"
 close-positions = "app.close_open_positions:main"
+portfolio-watcher = "app.portfolio_watcher:main"
+execution-watcher = "app.execution_watcher:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

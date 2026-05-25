@@ -5,6 +5,7 @@ import sys
 import threading
 import subprocess
 import base64
+import time
 
 from typing import List, Optional
 from dataclasses import dataclass
@@ -28,6 +29,12 @@ logger = logging.getLogger(__name__)
 
 _stop_event = threading.Event()
 _instrument_candidate_ids = set()
+
+# Reserve non-overlapping clientId ranges for watcher subprocesses.
+WATCHER_ORDER_CLIENT_ID_BASE = 100000
+WATCHER_ORDER_CLIENT_ID_SPAN = 900000000
+WATCHER_MARKET_CLIENT_ID_BASE = 1100000000
+WATCHER_MARKET_CLIENT_ID_SPAN = 900000000
 
 TERMINAL_RETRYABLE_BUY_STATUSES = {"REJECTED", "CANCELLED", "APICANCELLED", "INACTIVE"}
     
@@ -146,9 +153,31 @@ def build_strategy_payload_b64(strategy: Strategy) -> str:
     payload_json = strategy.to_json()
     return base64.urlsafe_b64encode(payload_json.encode("utf-8")).decode("ascii")
 
+
+def _generate_watcher_client_id_seed(instrument: Instrument) -> int:
+    # Shared seed used to derive deterministic, unique-enough watcher client ids.
+    timestamp_slice = int(time.time() * 1000) % 100000
+    instrument_part = int(instrument.id or 0) % 100000
+    return instrument_part * 100000 + timestamp_slice
+
+
+def generate_watcher_order_client_id(instrument: Instrument) -> int:
+    # Dedicated namespace for order watcher connections.
+    seed = _generate_watcher_client_id_seed(instrument)
+    return WATCHER_ORDER_CLIENT_ID_BASE + (seed % WATCHER_ORDER_CLIENT_ID_SPAN)
+
+
+def generate_watcher_market_client_id(order_client_id: int) -> int:
+    # Dedicated namespace for market-data watcher connections.
+    # Using order_client_id-derived offset keeps market id paired and collision-free across namespaces.
+    offset = (order_client_id - WATCHER_ORDER_CLIENT_ID_BASE) % WATCHER_MARKET_CLIENT_ID_SPAN
+    return WATCHER_MARKET_CLIENT_ID_BASE + offset
+
 def launch_asset_watcher(instrument: Instrument, strategy: Strategy) -> None:
     logger.info(f"Launching asset watcher for")
     logger.debug(f"Launching asset watcher for {instrument.symbol} and strategy {strategy.name} - {instrument}")
+    watcher_client_id = generate_watcher_order_client_id(instrument)
+    watcher_market_client_id = generate_watcher_market_client_id(watcher_client_id)
     cmd = [
         sys.executable,
         "-m",
@@ -157,6 +186,10 @@ def launch_asset_watcher(instrument: Instrument, strategy: Strategy) -> None:
         build_instrument_payload_b64(instrument),
         "--strategy-b64",
         build_strategy_payload_b64(strategy),
+        "--client-id",
+        str(watcher_client_id),
+        "--market-client-id",
+        str(watcher_market_client_id),
     ]
     subprocess.Popen(
         cmd,
@@ -244,7 +277,8 @@ def main():
                     logger.info(f"Order placed for {instrument.symbol} for strategy {strategy.name}: {order_placed}- {instrument}")
                     # Launch watcher only for accepted orders.
                     if order_placed:
-                        launch_asset_watcher(instrument, strategy)
+                        # launch_asset_watcher(instrument, strategy)
+                        logger.info(f"Asset watcher would be launched for {instrument.symbol} for strategy {strategy.name}. (Watcher launch is currently commented out)")   
                     else:
                         logger.warning(f"Order for {instrument.symbol} was rejected. Asset watcher will not be started.")
                     

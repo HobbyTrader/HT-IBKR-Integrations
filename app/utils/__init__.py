@@ -19,9 +19,14 @@ def _resolve_config_path():
         except Exception:
             pass
 
-    local_config = Path.cwd() / "config.json"
-    if local_config.exists() and local_config.is_file():
-        return local_config
+    # Prefer repository-local config files when running from source.
+    local_candidates = [
+        Path.cwd() / "config.json",
+        Path.cwd() / "app" / "config.json",
+    ]
+    for local_config in local_candidates:
+        if local_config.exists() and local_config.is_file():
+            return local_config
 
     user_config = _ensure_user_config_file()
     if user_config is not None:
@@ -116,27 +121,37 @@ def load_config_ibapi() -> json:
         return config_json
     
 def load_config_scheduler() -> json:
+    default_scheduler = {
+        "scanner": {
+            "enabled": True,
+            "interval": 60
+        },
+        "watcher": {
+            "enabled": True,
+            "interval": 60
+        },
+        "portfolio_watcher": {
+            "enabled": False,
+            "interval": 60
+        },
+        "execution_watcher": {
+            "enabled": False,
+            "interval": 60
+        }
+    }
+
     try:
-        return _load_config_data().get("scheduler", {
-            "scanner": {
-                "enabled": True,
-                "interval": 60
-            },
-            "watcher": {
-                "enabled": True,
-                "interval": 60
-            }
-        })
+        scheduler = _load_config_data().get("scheduler", {})
+        merged_scheduler = dict(default_scheduler)
+
+        for section_name, default_section in default_scheduler.items():
+            section = scheduler.get(section_name, {})
+            if isinstance(section, dict):
+                merged_section = dict(default_section)
+                merged_section.update(section)
+                merged_scheduler[section_name] = merged_section
+
+        return merged_scheduler
     except Exception as e:
         # Fallback config.json if non existing filr in project root
-        config_json = {
-            "scanner": {
-                "enabled": True,
-                "interval": 60
-            },
-            "watcher": {
-                "enabled": True,
-                "interval": 60
-            }
-        }
-        return config_json
+        return default_scheduler

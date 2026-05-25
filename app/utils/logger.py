@@ -1,3 +1,4 @@
+import logging
 import logging.config
 import os
 from app.utils import load_config_logging
@@ -51,12 +52,37 @@ class LoggerManager:
             "root": {
                 # Use the rotating file handler for everything
                 "handlers": ['minute_rotating_file_handler', 'console_handler'],
-                "level": "DEBUG",
+                "level": log_params.get("loglevel", "DEBUG"),
             },
         }
 
         logging.config.dictConfig(log_config)  
         cls._initialized = True
+
+    @classmethod
+    def add_file_handler(cls, log_filename: str) -> str:
+        """Attach an extra file handler using logging settings from config.json."""
+        log_params = load_config_logging()
+        log_path = log_params.get("logpath", "LOG")
+        full_path = os.path.abspath(os.path.join(log_path, log_filename))
+
+        os.makedirs(log_path, exist_ok=True)
+
+        root_logger = logging.getLogger()
+        for handler in root_logger.handlers:
+            if isinstance(handler, logging.FileHandler) and getattr(handler, "baseFilename", None) == full_path:
+                return full_path
+
+        file_handler = logging.FileHandler(full_path)
+        file_handler.setLevel(log_params.get("loglevel", "DEBUG"))
+        file_handler.setFormatter(
+            logging.Formatter(
+                "{asctime} | {levelname} | {name} | {filename}:{lineno} | {message} ",
+                style="{",
+            )
+        )
+        root_logger.addHandler(file_handler)
+        return full_path
     
-# Automaticallt create the logger manager on import.
+# Automatically create the logger manager on import.
 LoggerManager()

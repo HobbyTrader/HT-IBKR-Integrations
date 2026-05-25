@@ -30,7 +30,7 @@ class OrderService(IBApiConnector):
         
     def store_order(self, order: Order, instrument: Instrument):
         market_order = MarketOrder()
-        market_order.from_order(order, instrument.id, instrument.symbol, instrument.strategy_id, instrument.currency)
+        market_order.from_order(order, instrument.id, instrument.symbol, instrument.strategy_id, instrument.currency, instrument.market_price)
         
         logger.debug(f"[OrderService] - START - Stored order in DB: {market_order}" )
         self.order_dto.save_market_order(market_order)

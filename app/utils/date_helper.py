@@ -27,6 +27,7 @@ def _parse_datetime(date_string: str | None) -> datetime:
         '%Y-%m-%d %H:%M:%S.%f',   # 2026-01-24 15:30:00.123456
         '%Y-%m-%d',               # 2026-01-24
         '%Y%m%d %H:%M:%S',        # 20260124 15:30:00
+        '%Y%m%d-%H:%M:%S',        # 20260124-15:30:00 (IB executions)
         '%Y%m%d',                 # 20260124
     ]
     

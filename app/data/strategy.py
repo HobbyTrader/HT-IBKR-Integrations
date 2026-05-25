@@ -73,6 +73,15 @@ class StrategyDetail(NumericMixin):
         filter_opts = [FilterOption(**fo) for fo in data.get('filter_options', [])]
         data['filter_options'] = filter_opts
         
+        # Convert nested partial_sell_rules dicts to PartialSellRule instances.
+        partial_rules = []
+        for rule in data.get('partial_sell_rules', []):
+            if isinstance(rule, PartialSellRule):
+                partial_rules.append(rule)
+            else:
+                partial_rules.append(PartialSellRule(**rule))
+        data['partial_sell_rules'] = partial_rules
+        
         # Parse opening_hours and extract open_hour and close_hour
         opening_hours = data.get('opening_hours', [])
         if opening_hours and len(opening_hours) >= 2:

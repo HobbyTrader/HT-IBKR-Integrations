@@ -133,6 +133,54 @@ class ExecutionOrderDTO:
     # ============================================================================
     # UPDATE METHODS (UPDATE)
     # ============================================================================ 
-    
+    def update_execution_by_order_id(self, order_id: int, shares: float, price: float, execution_time) -> int:
+        cursor = self.dbconn.conn.cursor()
+        logger.debug(
+            "[ExecutionOrderDTO] - update ExecutionOrder by order_id=%s shares=%s price=%s execution_time=%s",
+            order_id,
+            shares,
+            price,
+            execution_time,
+        )
+        cursor.execute(
+            """UPDATE executions
+               SET shares = ?,
+                   price = ?,
+                   execution_time = ?,
+                   update_date = datetime('now')
+               WHERE order_id = ?""",
+            (shares, price, execution_time, order_id),
+        )
+        self.dbconn.conn.commit()
+        return cursor.rowcount
+
+    def upsert_execution_from_ib(
+        self,
+        exec_id: str,
+        order_id: int,
+        side: str,
+        shares: float,
+        price: float,
+        execution_time,
+    ) -> int:
+        updated_rows = self.update_execution_by_order_id(
+            order_id=order_id,
+            shares=shares,
+            price=price,
+            execution_time=execution_time,
+        )
+        if updated_rows > 0:
+            return updated_rows
+
+        execution_order = ExecutionOrder(
+            exec_id=exec_id,
+            order_id=order_id,
+            side=side,
+            shares=shares,
+            price=price,
+            execution_time=execution_time,
+        )
+        self.save_execution_order(execution_order)
+        return 1
         
     

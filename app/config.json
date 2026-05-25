@@ -7,7 +7,7 @@
     "HOST": "localhost",
     "PORT": 7497,
     "CLIENTID": "0",
-    "ACCOUNTIT": "DUMXXXXXX"
+    "ACCOUNTID": "DUMXXXXXX"
   },
   "logging": {
     "logpath": "LOG",
@@ -22,6 +22,14 @@
       "interval": 300
     },
     "watcher": {
+      "enabled": true,
+      "interval": 60
+    },
+    "portfolio_watcher": {
+      "enabled": true,
+      "interval": 60
+    },
+    "execution_watcher": {
       "enabled": true,
       "interval": 60
     }

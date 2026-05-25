@@ -37,6 +37,9 @@ class MarketOrder(NumericMixin):
          self.order_action, self.order_parent_id) = row
 
     def from_order(self, order: Order, contract_id: int, symbol:str, strategy_id: int, currency: str):
+        self.from_order(order, contract_id, symbol, strategy_id, currency, 0.0)
+        
+    def from_order(self, order: Order, contract_id: int, symbol:str, strategy_id: int, currency: str, market_price: float):
         self.order_id = order.orderId
         self.order_contract_id = contract_id
         self.order_symbol = symbol
@@ -49,6 +52,8 @@ class MarketOrder(NumericMixin):
                 self.order_price = order.auxPrice
             case "LMT":
                 self.order_price = order.lmtPrice
+            case "MKT":
+                 self.order_price = market_price
             case _:
                 self.order_price = 0.0
         

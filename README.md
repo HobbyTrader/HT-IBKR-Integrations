@@ -32,6 +32,17 @@ See the [ib_async github repo](https://github.com/ib-api-reloaded/ib_async) to v
 But in simple terms you must go to files-> Global Confgiuration -> API -> Settings and check the following parameters:
 ![alt text](img/twsconfig.png)
 
+## Application Workflow
+
+For a detailed explanation of how the main application (`app/main.py`) works, including:
+- The scanner and order placement workflow
+- How strategies are evaluated and executed
+- Service interactions (ScannerService, MarketService, OrderService)
+- Asset watcher behavior and partial-sell strategy parameters
+- Duplicate prevention and daily trade limit safeguards
+
+See the [WhatItDoes.md](WhatItDoes.md) document for a comprehensive walkthrough with concrete examples.
+
 ## Running the samples
 
 The Traderworkstation must be running for the samples to work (it can be in live trading or paper trading)

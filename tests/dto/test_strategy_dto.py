@@ -3,6 +3,7 @@ from unittest.mock import Mock, MagicMock, patch
 
 import sqlite3
 
+from app.data.strategy import PartialSellRule, Strategy
 from app.dto.strategy_dto import StrategyDTO
 
 
@@ -223,6 +224,65 @@ class TestStrategyDTOIntegration(unittest.TestCase):
         self.assertIsNotNone(out)
         self.assertEqual(out.name, "GapOpen")
         self.assertEqual(out.tags, ["US", "STOCK"])
+
+    def test_save_and_get_by_name_includes_partial_sell_rules(self):
+        strategy = Strategy.from_json(
+            {
+                "name": "GapOpenPartialSell",
+                "tags": ["US", "STOCK"],
+                "details": {
+                    "instrument": "STK",
+                    "locationCode": "STK.US.MAJOR",
+                    "scanCode": "HIGH_OPEN_GAP",
+                    "scan_options": [],
+                    "filter_options": [],
+                    "maxResults": 50,
+                    "minutes_to_order": 3,
+                    "max_shares_to_invest_per_trade": 1000,
+                    "min_shares_to_invest_per_trade": 100,
+                    "max_price_per_trade": 5000,
+                    "min_price_per_trade": 1000,
+                    "max_trades_per_day": 5,
+                    "opening_hours": ["15:30:00", "22:00:00"],
+                    "min_open_trade_gap_percentage": 2.0,
+                    "max_open_trade_gap_percentage": 10.0,
+                    "max_volume_percent": 1.0,
+                    "stop_loss_percent": 95.0,
+                    "take_profit_percent": 110.0,
+                    "increase_position_candidate_percentage": 0.5,
+                    "partial_sell_rules": [
+                        {
+                            "rule_id": 1,
+                            "target_percentage": 30.0,
+                            "quantity_percentage": 50.0,
+                            "stop_loss_adjustment_percentage": 0.0,
+                        },
+                        {
+                            "rule_id": 2,
+                            "target_percentage": 50.0,
+                            "quantity_percentage": 30.0,
+                            "stop_loss_adjustment_percentage": 5.0,
+                        },
+                    ],
+                },
+            }
+        )
+
+        self.dto.save_strategy(strategy)
+
+        out = self.dto.get_strategy_by_name("GapOpenPartialSell")
+        self.assertIsNotNone(out)
+        self.assertIsNotNone(out.details)
+        self.assertEqual(len(out.details.partial_sell_rules), 2)
+        self.assertIsInstance(out.details.partial_sell_rules[0], PartialSellRule)
+        self.assertEqual(out.details.partial_sell_rules[0].rule_id, 1)
+        self.assertEqual(out.details.partial_sell_rules[0].target_percentage, 30.0)
+        self.assertEqual(out.details.partial_sell_rules[0].quantity_percentage, 50.0)
+        self.assertEqual(out.details.partial_sell_rules[0].stop_loss_adjustment_percentage, 0.0)
+        self.assertEqual(out.details.partial_sell_rules[1].rule_id, 2)
+        self.assertEqual(out.details.partial_sell_rules[1].target_percentage, 50.0)
+        self.assertEqual(out.details.partial_sell_rules[1].quantity_percentage, 30.0)
+        self.assertEqual(out.details.partial_sell_rules[1].stop_loss_adjustment_percentage, 5.0)
 
     def test_get_active_strategies_only(self):
         cur = self.conn.cursor()
