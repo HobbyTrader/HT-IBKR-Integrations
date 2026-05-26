@@ -108,7 +108,6 @@ def update_order_status():
         order_serv.get_active_orders()
         order_serv.get_completed_orders()
 
-
 def has_buy_order_today(instrument: Instrument, market_order_dto: Optional[MarketOrderDTO] = None) -> bool:
     if market_order_dto is None:
         market_order_dto = MarketOrderDTO()
@@ -132,7 +131,6 @@ def has_buy_order_today(instrument: Instrument, market_order_dto: Optional[Marke
 
     return False
 
-
 def count_buy_orders_today_for_strategy(strategy: Strategy, market_order_dto: Optional[MarketOrderDTO] = None) -> int:
     if market_order_dto is None:
         market_order_dto = MarketOrderDTO()
@@ -153,19 +151,16 @@ def build_strategy_payload_b64(strategy: Strategy) -> str:
     payload_json = strategy.to_json()
     return base64.urlsafe_b64encode(payload_json.encode("utf-8")).decode("ascii")
 
-
 def _generate_watcher_client_id_seed(instrument: Instrument) -> int:
     # Shared seed used to derive deterministic, unique-enough watcher client ids.
     timestamp_slice = int(time.time() * 1000) % 100000
     instrument_part = int(instrument.id or 0) % 100000
     return instrument_part * 100000 + timestamp_slice
 
-
 def generate_watcher_order_client_id(instrument: Instrument) -> int:
     # Dedicated namespace for order watcher connections.
     seed = _generate_watcher_client_id_seed(instrument)
     return WATCHER_ORDER_CLIENT_ID_BASE + (seed % WATCHER_ORDER_CLIENT_ID_SPAN)
-
 
 def generate_watcher_market_client_id(order_client_id: int) -> int:
     # Dedicated namespace for market-data watcher connections.
@@ -232,13 +227,6 @@ def main():
             )
             continue
         
-        # TODO: Add check on opening hours of the strategy to skip if outside allowed time
-        # TODO: Add check on max trades per day already placed and keep track of trades placed today
-        # TODO: Add final check on open positions to close them before market close
-        # TODO: Review stop loss order if price gap up during the day. See details in strategy.
-        # TODO: Add current open order status check to avoid placing duplicate orders
-        # TODO: Add cleanup of scanner table for the non candidates after processing
-        
         # Get scanner market data
         scanner_results = get_scanner_results(strategy, exec_key)
             
@@ -251,6 +239,8 @@ def main():
                     strategy.name,
                     strategy.details.max_trades_per_day,
                 )
+                # Stop the prcess if the number of placed orders already reached the max_trades_per_day limit to avoid placing more orders later in the process and then having to cancel them.
+                scheduler_stop()
                 break
 
             # Check if instrument already has a BUY order in market_orders today.
@@ -277,14 +267,13 @@ def main():
                     logger.info(f"Order placed for {instrument.symbol} for strategy {strategy.name}: {order_placed}- {instrument}")
                     # Launch watcher only for accepted orders.
                     if order_placed:
+                        _instrument_candidate_ids.add(instrument.id)
+                        placed_orders_today += 1
                         # launch_asset_watcher(instrument, strategy)
                         logger.info(f"Asset watcher would be launched for {instrument.symbol} for strategy {strategy.name}. (Watcher launch is currently commented out)")   
                     else:
                         logger.warning(f"Order for {instrument.symbol} was rejected. Asset watcher will not be started.")
-                    
-                if order_placed:
-                    _instrument_candidate_ids.add(instrument.id)
-                    placed_orders_today += 1
+                                     
                 
                 # Stop if reached max candidates defined in strategy - MAX_TRADES_PER_DAY
                 if placed_orders_today >= strategy.details.max_trades_per_day:
@@ -293,10 +282,12 @@ def main():
                         strategy.name,
                         strategy.details.max_trades_per_day,
                     )
+                    # Stop the prcess if the number of placed orders already reached the max_trades_per_day limit to avoid placing more orders later in the process and then having to cancel them.
+                    scheduler_stop()
                     break
         
         clean_non_candidates(exec_key, scanner_dto)
-        update_order_status()
+        # update_order_status()
         
 
 def run_scheduler():
