@@ -1,4 +1,5 @@
 import logging
+from decimal import Decimal
 
 from typing import List
 
@@ -43,9 +44,17 @@ class ExecutionOrderDTO:
     # ============================================================================
     # SAVE METHODS (INSERT)
     # ============================================================================     
+    @staticmethod
+    def _normalize_sql_value(value):
+        if isinstance(value, Decimal):
+            return float(value)
+        return value
+
     def save_execution_order(self, execution_order: ExecutionOrder) -> int:
         cursor = self.dbconn.conn.cursor()
         logger.debug(f"[ExecutionOrderDTO] - save ExecutionOrder. ExecutionOrder: {execution_order}")
+        shares = self._normalize_sql_value(execution_order.shares)
+        price = self._normalize_sql_value(execution_order.price)
         cursor.execute(
             """INSERT INTO executions (
                 exec_id,
@@ -59,8 +68,8 @@ class ExecutionOrderDTO:
             ( execution_order.exec_id,
              execution_order.order_id, 
              execution_order.side, 
-             execution_order.shares, 
-             execution_order.price, 
+             shares,
+             price,
              execution_order.execution_time))
         self.dbconn.conn.commit()   
         id = cursor.lastrowid
@@ -135,6 +144,8 @@ class ExecutionOrderDTO:
     # ============================================================================ 
     def update_execution_by_order_id(self, order_id: int, shares: float, price: float, execution_time) -> int:
         cursor = self.dbconn.conn.cursor()
+        shares = self._normalize_sql_value(shares)
+        price = self._normalize_sql_value(price)
         logger.debug(
             "[ExecutionOrderDTO] - update ExecutionOrder by order_id=%s shares=%s price=%s execution_time=%s",
             order_id,

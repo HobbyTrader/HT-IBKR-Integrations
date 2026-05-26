@@ -1,5 +1,6 @@
 import sqlite3
 import unittest
+from decimal import Decimal
 from unittest.mock import Mock, patch
 
 from app.data.execution_order import ExecutionOrder
@@ -92,6 +93,23 @@ class TestExecutionServiceCallbacksIntegration(unittest.TestCase):
         self.assertEqual(rows[0].shares, 7)
         self.assertEqual(rows[0].price, 99.5)
         self.assertEqual(rows[0].execution_time.strftime("%Y%m%d-%H:%M:%S"), "20260525-11:00:00")
+
+    def test_exec_details_accepts_decimal_values(self):
+        execution = Mock()
+        execution.execId = "IB-9003"
+        execution.orderId = 9003
+        execution.side = "BUY"
+        execution.cumQty = Decimal("12")
+        execution.avgPrice = Decimal("45.67")
+        execution.time = "20260526-09:30:00"
+
+        self.service.execDetails(3, Mock(), execution)
+
+        rows = self.dto.get_execution_orders_by_order_id(9003)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].shares, 12)
+        self.assertEqual(rows[0].price, 45.67)
+        self.assertEqual(rows[0].execution_time.strftime("%Y%m%d-%H:%M:%S"), "20260526-09:30:00")
 
 
 if __name__ == "__main__":
