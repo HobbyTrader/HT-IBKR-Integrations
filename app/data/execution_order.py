@@ -16,6 +16,7 @@ class ExecutionOrder(NumericMixin):
     id: int = 0
     exec_id: str = ""
     order_id: int = 0
+    contract_symbol: str = ""
     side: str = ""
     shares: float = 0.0
     price: float = 0.0
@@ -25,7 +26,7 @@ class ExecutionOrder(NumericMixin):
     
     
     def from_execution_row(self, row: tuple):
-        (self.id, self.exec_id, self.order_id, self.side, self.shares, self.price, self.execution_time, 
+        (self.id, self.exec_id, self.order_id, self.contract_symbol, self.side, self.shares, self.price, self.execution_time,
          self.create_date, self.update_date) = row
 
     def from_execution(self, execution: Execution):

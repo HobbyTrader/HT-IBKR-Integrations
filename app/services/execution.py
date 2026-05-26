@@ -25,6 +25,7 @@ class ExecutionService(IBApiConnector):
         updated_rows = self.execution_order_dto.upsert_execution_from_ib(
             exec_id=getattr(execution, "execId", ""),
             order_id=getattr(execution, "orderId", 0),
+            contract_symbol=getattr(contract, "symbol", ""),
             side=getattr(execution, "side", ""),
             shares=getattr(execution, "cumQty", 0.0),
             price=getattr(execution, "avgPrice", 0.0),

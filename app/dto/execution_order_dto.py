@@ -12,6 +12,20 @@ logger = logging.getLogger(__name__)
 class ExecutionOrderDTO:
     def __init__(self):
         self.dbconn = SQLiteManager()
+        self._ensure_contract_symbol_column()
+
+    def _ensure_contract_symbol_column(self) -> None:
+        cursor = self.dbconn.conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='executions'")
+        if cursor.fetchone() is None:
+            return
+
+        cursor.execute("PRAGMA table_info(executions)")
+        columns = {row[1] for row in cursor.fetchall()}
+        if "contract_symbol" not in columns:
+            logger.info("[ExecutionOrderDTO] - Adding missing executions.contract_symbol column.")
+            cursor.execute("ALTER TABLE executions ADD COLUMN contract_symbol TEXT NOT NULL DEFAULT ''")
+            self.dbconn.conn.commit()
     
     # ============================================================================
     # ROW TO OBJECT METHODS
@@ -22,17 +36,19 @@ class ExecutionOrderDTO:
         id = row[0]
         exec_id = row[1]
         order_id = row[2]
-        side = row[3]
-        shares = row[4]
-        price = row[5]
-        execution_time = row[6]
-        create_date = row[7]
-        update_date = row[8]
+        contract_symbol = row[3]
+        side = row[4]
+        shares = row[5]
+        price = row[6]
+        execution_time = row[7]
+        create_date = row[8]
+        update_date = row[9]
                 
         return ExecutionOrder(
             id=id,
             exec_id=exec_id,    
             order_id=order_id,
+            contract_symbol=contract_symbol,
             side=side,
             shares=shares,
             price=price,
@@ -59,14 +75,16 @@ class ExecutionOrderDTO:
             """INSERT INTO executions (
                 exec_id,
                 order_id, 
+                contract_symbol,
                 side, 
                 shares, 
                 price, 
                 execution_time) 
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
             ( execution_order.exec_id,
              execution_order.order_id, 
+             execution_order.contract_symbol,
              execution_order.side, 
              shares,
              price,
@@ -87,6 +105,7 @@ class ExecutionOrderDTO:
                 id,
                 exec_id,
                 order_id,
+                contract_symbol,
                 side,
                 shares,
                 price,
@@ -108,6 +127,7 @@ class ExecutionOrderDTO:
                 id,
                 exec_id,
                 order_id,
+                contract_symbol,
                 side,
                 shares,
                 price,
@@ -127,6 +147,7 @@ class ExecutionOrderDTO:
                 id,
                 exec_id,
                 order_id,
+                contract_symbol,
                 side,
                 shares,
                 price,
@@ -142,13 +163,14 @@ class ExecutionOrderDTO:
     # ============================================================================
     # UPDATE METHODS (UPDATE)
     # ============================================================================ 
-    def update_execution_by_order_id(self, order_id: int, shares: float, price: float, execution_time) -> int:
+    def update_execution_by_order_id(self, order_id: int, contract_symbol: str, shares: float, price: float, execution_time) -> int:
         cursor = self.dbconn.conn.cursor()
         shares = self._normalize_sql_value(shares)
         price = self._normalize_sql_value(price)
         logger.debug(
-            "[ExecutionOrderDTO] - update ExecutionOrder by order_id=%s shares=%s price=%s execution_time=%s",
+            "[ExecutionOrderDTO] - update ExecutionOrder by order_id=%s contract_symbol=%s shares=%s price=%s execution_time=%s",
             order_id,
+            contract_symbol,
             shares,
             price,
             execution_time,
@@ -159,8 +181,8 @@ class ExecutionOrderDTO:
                    price = ?,
                    execution_time = ?,
                    update_date = datetime('now')
-               WHERE order_id = ?""",
-            (shares, price, execution_time, order_id),
+               WHERE order_id = ? AND contract_symbol = ?""",
+            (shares, price, execution_time, order_id, contract_symbol),
         )
         self.dbconn.conn.commit()
         return cursor.rowcount
@@ -169,6 +191,7 @@ class ExecutionOrderDTO:
         self,
         exec_id: str,
         order_id: int,
+        contract_symbol: str,
         side: str,
         shares: float,
         price: float,
@@ -176,6 +199,7 @@ class ExecutionOrderDTO:
     ) -> int:
         updated_rows = self.update_execution_by_order_id(
             order_id=order_id,
+           contract_symbol=contract_symbol,
             shares=shares,
             price=price,
             execution_time=execution_time,
@@ -186,6 +210,7 @@ class ExecutionOrderDTO:
         execution_order = ExecutionOrder(
             exec_id=exec_id,
             order_id=order_id,
+            contract_symbol=contract_symbol,
             side=side,
             shares=shares,
             price=price,

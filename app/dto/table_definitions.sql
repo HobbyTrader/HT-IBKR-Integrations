@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS executions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     exec_id TEXT NOT NULL,
     order_id INTEGER NOT NULL,
+    contract_symbol TEXT NOT NULL DEFAULT '',
     side TEXT NOT NULL,
     shares REAL NOT NULL,
     price REAL NOT NULL,

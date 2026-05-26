@@ -7,6 +7,7 @@ import time
 from app.services.execution import ExecutionService
 from app.utils import load_config_scheduler
 from app.utils.logger import LoggerManager
+from app.utils.sqllitemanager import SQLiteManager
 
 LoggerManager("EXECUTION_WATCHER")
 logger = logging.getLogger(__name__)
@@ -49,6 +50,19 @@ def scheduler_stop() -> None:
     _stop_event.set()
 
 
+def ensure_executions_table() -> None:
+    manager = SQLiteManager()
+    try:
+        if manager.table_exists("executions"):
+            logger.info("Table executions already exists.")
+            return
+
+        logger.info("Table executions is missing. Initializing tables from table definitions.")
+        manager.initialize_tables()
+    finally:
+        manager.close()
+
+
 def main() -> None:
     args = get_arguments()
     logger.info("Execution watcher started with clientId=%s reqId=%s", args.client_id, args.req_id)
@@ -60,6 +74,8 @@ def main() -> None:
 
 
 def run_scheduler() -> None:
+    ensure_executions_table()
+
     config_scheduler_execution = load_config_scheduler().get("execution_watcher", {})
     logger.info("Loaded scheduler configuration for execution watcher: %s", config_scheduler_execution)
 
