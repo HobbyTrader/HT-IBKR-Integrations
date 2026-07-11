@@ -49,7 +49,37 @@ class TestExecutionServiceCallbacksIntegration(unittest.TestCase):
             )
             """
         )
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS market_orders (
+                order_id INTEGER PRIMARY KEY,
+                order_status TEXT NOT NULL DEFAULT 'Submitted',
+                order_price REAL NOT NULL,
+                update_date TEXT NOT NULL DEFAULT (datetime('now'))
+            )
+            """
+        )
         self.conn.commit()
+
+    def _insert_market_order(self, order_id: int, order_price: float, order_status: str = "Submitted") -> None:
+        cursor = self.conn.cursor()
+        cursor.execute(
+            "INSERT INTO market_orders (order_id, order_status, order_price) VALUES (?, ?, ?)",
+            (order_id, order_status, order_price),
+        )
+        self.conn.commit()
+
+    def _market_order_price(self, order_id: int) -> float:
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT order_price FROM market_orders WHERE order_id = ?", (order_id,))
+        row = cursor.fetchone()
+        return row[0] if row else None
+
+    def _market_order_status(self, order_id: int) -> str:
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT order_status FROM market_orders WHERE order_id = ?", (order_id,))
+        row = cursor.fetchone()
+        return row[0] if row else None
 
     def test_exec_details_updates_existing_row_by_order_id(self):
         existing = ExecutionOrder(
@@ -118,6 +148,44 @@ class TestExecutionServiceCallbacksIntegration(unittest.TestCase):
         self.assertEqual(rows[0].shares, 12)
         self.assertEqual(rows[0].price, 45.67)
         self.assertEqual(rows[0].execution_time.strftime("%Y%m%d-%H:%M:%S"), "20260526-09:30:00")
+
+    def test_exec_details_updates_market_order_price_for_bot_side(self):
+        self._insert_market_order(order_id=9010, order_price=10.0)
+
+        execution = Mock()
+        execution.execId = "IB-9010"
+        execution.orderId = 9010
+        execution.side = "BOT"
+        execution.cumQty = 1
+        execution.avgPrice = 123.45
+        execution.time = "20260526-10:30:00"
+
+        contract = Mock()
+        contract.symbol = "AAPL"
+
+        self.service.execDetails(4, contract, execution)
+
+        self.assertEqual(self._market_order_price(9010), 123.45)
+        self.assertEqual(self._market_order_status(9010), "Filled")
+
+    def test_exec_details_does_not_update_market_order_price_for_non_bot_side(self):
+        self._insert_market_order(order_id=9011, order_price=10.0)
+
+        execution = Mock()
+        execution.execId = "IB-9011"
+        execution.orderId = 9011
+        execution.side = "SLD"
+        execution.cumQty = 1
+        execution.avgPrice = 333.33
+        execution.time = "20260526-10:35:00"
+
+        contract = Mock()
+        contract.symbol = "AAPL"
+
+        self.service.execDetails(5, contract, execution)
+
+        self.assertEqual(self._market_order_price(9011), 10.0)
+        self.assertEqual(self._market_order_status(9011), "Filled")
 
     def test_exec_details_uses_symbol_with_order_id_as_update_key(self):
         self.dto.save_execution_order(

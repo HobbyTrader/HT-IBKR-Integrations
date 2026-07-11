@@ -66,6 +66,52 @@ class ExecutionOrderDTO:
             return float(value)
         return value
 
+    def _update_market_order_price_for_buy(self, order_id: int, side: str, price: float) -> None:
+        if (side or "").upper() != "BOT":
+            return
+
+        cursor = self.dbconn.conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='market_orders'")
+        if cursor.fetchone() is None:
+            return
+
+        cursor.execute("PRAGMA table_info(market_orders)")
+        columns = {row[1] for row in cursor.fetchall()}
+        if "update_date" in columns:
+            cursor.execute(
+                "UPDATE market_orders SET order_price = ?, update_date = CURRENT_TIMESTAMP WHERE order_id = ?",
+                (price, order_id),
+            )
+            return
+
+        cursor.execute(
+            "UPDATE market_orders SET order_price = ? WHERE order_id = ?",
+            (price, order_id),
+        )
+
+    def _mark_market_order_filled(self, order_id: int) -> None:
+        cursor = self.dbconn.conn.cursor()
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='market_orders'")
+        if cursor.fetchone() is None:
+            return
+
+        cursor.execute("PRAGMA table_info(market_orders)")
+        columns = {row[1] for row in cursor.fetchall()}
+        if "order_status" not in columns:
+            return
+
+        if "update_date" in columns:
+            cursor.execute(
+                "UPDATE market_orders SET order_status = 'Filled', update_date = CURRENT_TIMESTAMP WHERE order_id = ?",
+                (order_id,),
+            )
+            return
+
+        cursor.execute(
+            "UPDATE market_orders SET order_status = 'Filled' WHERE order_id = ?",
+            (order_id,),
+        )
+
     def save_execution_order(self, execution_order: ExecutionOrder) -> int:
         cursor = self.dbconn.conn.cursor()
         logger.debug(f"[ExecutionOrderDTO] - save ExecutionOrder. ExecutionOrder: {execution_order}")
@@ -89,6 +135,12 @@ class ExecutionOrderDTO:
              shares,
              price,
              execution_order.execution_time))
+        self._update_market_order_price_for_buy(
+            order_id=execution_order.order_id,
+            side=execution_order.side,
+            price=price,
+        )
+        self._mark_market_order_filled(order_id=execution_order.order_id)
         self.dbconn.conn.commit()   
         id = cursor.lastrowid
         logger.debug(f"[ExecutionOrderDTO] - ExecutionOrder saved with ID: {id}")

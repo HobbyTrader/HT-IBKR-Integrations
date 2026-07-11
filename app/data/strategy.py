@@ -9,6 +9,7 @@ from datetime import datetime, time, timedelta
 
 from app.data.numeric_mixin import NumericMixin
 from app.data.instrument import Instrument
+from app.utils.date_helper import _parse_datetime
 from app.utils.timeencoder import TimeEncoder
 
 if TYPE_CHECKING:
@@ -156,12 +157,31 @@ class Strategy(NumericMixin):
     def apply_strategy_on_instrument(self, instrument: Instrument):
         instrument.strategy_id = self.id
         
+         # Store history for debugging purposes before applying strategy logic
+        instrument.store_history()
+        
         # Placeholder logic to determine if an instrument meets strategy criteria
         # Implement actual checks based on strategy details
         if not instrument.daily_history or len(instrument.daily_history) < 4:
             logger.warning(f"[Instrument] - Not enough daily history data for {instrument.symbol} to determine order candidacy.")
             instrument.is_candidate = False
             return 
+
+        latest_bar = instrument.daily_history[-1]
+        latest_bar_time = _parse_datetime(getattr(latest_bar, "date", None))
+        latest_bar_minute = latest_bar_time.minute
+        current_minute = datetime.now().minute
+        minute_lag = (current_minute - latest_bar_minute) % 60
+        if minute_lag > 2:
+            logger.warning(
+                "[Instrument] - Latest history bar for %s is stale. bar_minute=%s current_minute=%s lag=%s.",
+                instrument.symbol,
+                latest_bar_minute,
+                current_minute,
+                minute_lag,
+            )
+            instrument.is_candidate = False
+            return
         
         # If avg wap of last 20 values (=10 minutes) is higher than the opening price then we have a buying candidate
         # Take the avg exchanged volume into account as well. 
@@ -170,6 +190,9 @@ class Strategy(NumericMixin):
         waps = [bar.wap for bar in instrument.daily_history[-item_num:]]
         avg_price = sum(waps)/(item_num)
         volumes = [bar.volume for bar in instrument.daily_history[-item_num:]]
+        
+       
+        
         logger.debug(f"[Instrument] - [{instrument.symbol}] - open value {instrument.daily_history[-item_num].open}: PRICE AVG - {avg_price} : VOLUME AVG {sum(volumes)/(item_num)}")
         if (instrument.daily_history[-item_num].open * (1 + (self.details.increase_position_candidate_percentage / 100.0)) < avg_price):
             instrument.calculate_avg_volume(item_num)
@@ -185,7 +208,7 @@ class Strategy(NumericMixin):
             instrument.set_take_profit_price(self.get_take_profit_price(instrument.market_price))
             
             instrument.is_candidate = True
-            instrument.store_history()
+            # instrument.store_history()
         else:
             logger.debug(f"[Instrument] - {instrument.symbol} does not meet strategy criteria for order candidacy due to insufficient price increase.")
             instrument.is_candidate = False

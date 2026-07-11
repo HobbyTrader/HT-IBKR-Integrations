@@ -1,6 +1,6 @@
 import unittest
 import json
-from datetime import time, datetime
+from datetime import time, datetime, timedelta
 from unittest.mock import Mock, patch
 
 from app.data.strategy import Strategy, StrategyDetail, FilterOption
@@ -337,13 +337,14 @@ class TestStrategy(unittest.TestCase):
         """Test apply_strategy_on_instrument when instrument doesn't meet criteria."""
         strategy = Strategy.from_json(self.valid_strategy_dict)
         strategy.id = 1
+        now_str = datetime.now().strftime("%Y%m%d %H:%M:%S")
         
         # Create mock bars where avg wap is NOT above open price
         bars = [
-            Mock(open=100.0, wap=99.5, volume=50),
-            Mock(open=100.0, wap=99.3, volume=50),
-            Mock(open=100.0, wap=99.2, volume=50),
-            Mock(open=100.0, wap=99.1, volume=50)
+            Mock(open=100.0, wap=99.5, volume=50, date=now_str),
+            Mock(open=100.0, wap=99.3, volume=50, date=now_str),
+            Mock(open=100.0, wap=99.2, volume=50, date=now_str),
+            Mock(open=100.0, wap=99.1, volume=50, date=now_str)
         ]
         
         instrument = self._create_mock_instrument_with_history(
@@ -353,18 +354,19 @@ class TestStrategy(unittest.TestCase):
         strategy.apply_strategy_on_instrument(instrument)
         
         self.assertFalse(instrument.is_candidate)
-        instrument.store_history.assert_not_called()
+        instrument.store_history.assert_called_once()
 
     def test_strategy_apply_strategy_on_instrument_candidate(self):
         """Test with helper function."""
         strategy = Strategy.from_json(self.valid_strategy_dict)
         strategy.id = 1
+        now_str = datetime.now().strftime("%Y%m%d %H:%M:%S")
         
         bars = [
-            Mock(open=100.0, wap=102.0, volume=1000),
-            Mock(open=100.0, wap=103.0, volume=1200),
-            Mock(open=100.0, wap=104.0, volume=1100),
-            Mock(open=100.0, wap=105.0, volume=1300),
+            Mock(open=100.0, wap=102.0, volume=1000, date=now_str),
+            Mock(open=100.0, wap=103.0, volume=1200, date=now_str),
+            Mock(open=100.0, wap=104.0, volume=1100, date=now_str),
+            Mock(open=100.0, wap=105.0, volume=1300, date=now_str),
         ]
         
         instrument = self._create_mock_instrument_with_history(
@@ -374,6 +376,54 @@ class TestStrategy(unittest.TestCase):
         strategy.apply_strategy_on_instrument(instrument)
         
         self.assertTrue(instrument.is_candidate)
+        instrument.store_history.assert_called_once()
+
+    def test_strategy_apply_strategy_on_instrument_rejects_stale_last_bar(self):
+        """Test apply_strategy_on_instrument rejects stale history bar older than 2 minutes."""
+        strategy = Strategy.from_json(self.valid_strategy_dict)
+        strategy.id = 1
+
+        stale_str = (datetime.now() - timedelta(minutes=3)).strftime("%Y%m%d %H:%M:%S")
+        bars = [
+            Mock(open=100.0, wap=102.0, volume=1000, date=stale_str),
+            Mock(open=100.0, wap=103.0, volume=1200, date=stale_str),
+            Mock(open=100.0, wap=104.0, volume=1100, date=stale_str),
+            Mock(open=100.0, wap=105.0, volume=1300, date=stale_str),
+        ]
+
+        instrument = self._create_mock_instrument_with_history(
+            bars, avg_volume=1150.0, market_price=105.0, volume_buy=50
+        )
+
+        strategy.apply_strategy_on_instrument(instrument)
+
+        self.assertFalse(instrument.is_candidate)
+        instrument.store_history.assert_called_once()
+
+    @patch("app.data.strategy.datetime")
+    def test_strategy_apply_strategy_on_instrument_stale_when_current_1602_and_last_bar_0945(self, mock_datetime):
+        """Verify minute-based stale check: 16:02 current minute vs 09:45 bar minute marks instrument non-candidate."""
+        strategy = Strategy.from_json(self.valid_strategy_dict)
+        strategy.id = 1
+
+        mock_now = Mock()
+        mock_now.minute = 2
+        mock_datetime.now.return_value = mock_now
+
+        bars = [
+            Mock(open=100.0, wap=102.0, volume=1000, date="20260602 09:45:00"),
+            Mock(open=100.0, wap=103.0, volume=1200, date="20260602 09:45:00"),
+            Mock(open=100.0, wap=104.0, volume=1100, date="20260602 09:45:00"),
+            Mock(open=100.0, wap=105.0, volume=1300, date="20260602 09:45:00"),
+        ]
+
+        instrument = self._create_mock_instrument_with_history(
+            bars, avg_volume=1150.0, market_price=105.0, volume_buy=50
+        )
+
+        strategy.apply_strategy_on_instrument(instrument)
+
+        self.assertFalse(instrument.is_candidate)
         instrument.store_history.assert_called_once()
 
 

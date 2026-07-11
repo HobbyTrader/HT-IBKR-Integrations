@@ -265,9 +265,9 @@ def main():
                     logger.info(f"Placing order for {instrument.symbol} for strategy {strategy.name}")
                     order_placed = order_serv.place_bracket_order(instrument)
                     logger.info(f"Order placed for {instrument.symbol} for strategy {strategy.name}: {order_placed}- {instrument}")
+                    _instrument_candidate_ids.add(instrument.id)
                     # Launch watcher only for accepted orders.
                     if order_placed:
-                        _instrument_candidate_ids.add(instrument.id)
                         placed_orders_today += 1
                         # launch_asset_watcher(instrument, strategy)
                         logger.info(f"Asset watcher would be launched for {instrument.symbol} for strategy {strategy.name}. (Watcher launch is currently commented out)")   
